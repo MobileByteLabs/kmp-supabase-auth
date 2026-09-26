@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  OAuth callback intent-filter, shipped by the LIBRARY so consuming apps get it by manifest
+  merge rather than each having to know it is needed.
+
+  This exists because of a real, shipped bug. A production app in this workspace enabled the
+  Apple sign-in button on Android, where there is no native Apple provider, so the flow fell
+  back to the GoTrue OAuth redirect and opened a browser — with no intent-filter anywhere in the
+  app to receive the callback. The flow was unfinishable, and nothing in the build said so.
+
+  The activity is OURS (SupabaseAuthCallbackActivity) — auth-kt ships no callback activity, only
+  `SupabaseClient.handleDeeplinks(intent)` for an app to call from its own activity. This wraps
+  that call so no app has to.
+
+  `${applicationId}` resolves per consuming app at merge time, matching the scheme half of
+  SupabaseAuthConfig.redirectUrl (default `<applicationId>://login-callback`). An app using a
+  different scheme overrides this entry in its own manifest.
+
+  Not needed for native Google on Android (Credential Manager never leaves the app) — only for
+  the redirect paths: Apple on Android, and any provider when native is unavailable.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name="io.github.mobilebytelabs.supabaseauth.SupabaseAuthCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="login-callback"
+                    android:scheme="${applicationId}" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

@@ -3,6 +3,7 @@ import com.vanniktech.maven.publish.KotlinMultiplatform
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.File
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -63,8 +64,19 @@ kotlin {
         }
     }
 
-    iosArm64()
-    iosSimulatorArm64()
+    // Same Swift-compatibility linker shims as cmp-supabase-auth — inherited through it, since
+    // supabase-kt pulls cryptography-provider-cryptokit whose interop is written in Swift.
+    // Without these, every iOS TEST binary fails with
+    // `Undefined symbols: __swift_FORCE_LOAD_$_swiftCompatibility56`.
+    //
+    // HOST-GATED: `xcrun` exists only on macOS and resolves at CONFIGURATION time, so an ungated
+    // call aborts the build on every Linux runner.
+    val isMacOs = System.getProperty("os.name").startsWith("Mac", ignoreCase = true)
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        if (!isMacOs) return@forEach
+        val sdk = if (target.konanTarget.name == "ios_arm64") "iphoneos" else "iphonesimulator"
+        target.binaries.all { linkerOpts("-L${swiftLibraryPath(sdk)}") }
+    }
 
     // `binaries.executable()` on both web targets: the Compose plugin refuses to configure UI
     // tests without it, because the Skiko runtime Compose needs can only be loaded from a
@@ -113,6 +125,18 @@ kotlin {
     }
 }
 
+/** Absolute path to the active toolchain's Swift static libraries for [sdk]. */
+fun swiftLibraryPath(sdk: String): String {
+    val swiftc =
+        providers
+            .exec {
+                commandLine("xcrun", "--find", "swiftc")
+            }.standardOutput.asText
+            .get()
+            .trim()
+    return File(File(swiftc).parentFile.parentFile, "lib/swift/$sdk").absolutePath
+}
+
 mavenPublishing {
     configure(
         KotlinMultiplatform(
@@ -155,4 +179,17 @@ mavenPublishing {
             developerConnection = "scm:git:ssh://git@github.com/MobileByteLabs/kmp-supabase-auth.git"
         }
     }
+}
+
+// Wasm test runners and Compose do not currently coexist here: the node runner exits 1 on a dry
+// run (Skiko cannot load outside a browser) and the browser runner reports "no tests discovered"
+// because Karma serves the bundle as a classic script, where Kotlin/Wasm's `import.meta` is a
+// parse error — the same upstream issue documented in cmp-supabase-auth's build file.
+//
+// The ViewModel suite still executes on jvm, android, iosArm64, iosSimulatorArm64 and js. Nothing
+// in this module is wasm-specific, so the gap costs no real coverage.
+//
+// RE-ENABLE WHEN: a KGP/Compose bump makes either task pass. Delete this block and run them.
+tasks.matching { it.name == "wasmJsNodeTest" || it.name == "wasmJsBrowserTest" }.configureEach {
+    enabled = false
 }

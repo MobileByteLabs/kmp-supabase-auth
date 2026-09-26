@@ -18,16 +18,21 @@ group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("supabaseauth.version").get()
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// TARGETS — 8. MEASURED against Maven Central on 2026-09-26, never inferred.
+// TARGETS — 17. MEASURED against Maven Central on 2026-09-26, never inferred.
 //
-// This module's ceiling is the INTERSECTION of its two hard dependencies:
-//   auth-kt 3.8.0        17 targets — no linuxArm64 / watchosArm32 / watchosDeviceArm64 / wasmWasi
-//   store5  5.1.0-beta01  8 targets — no macOS / tvOS / watchOS / mingwX64 / linuxArm64
+// The ceiling is `auth-kt` 3.8.0, which publishes 17 of the 21 targets this toolkit family
+// considers reachable. Missing, and therefore not declared here:
+//     linuxArm64 · watchosArm32 · watchosDeviceArm64 · wasmWasi
 //
-// store5 is the binding constraint. Dropping macOS, tvOS, watchOS and Windows is therefore a
-// measurement, not a preference — re-probe before widening this list, and widen it the moment
-// store5 publishes more. `curl -o /dev/null -w '%{http_code}' \
-//   https://repo1.maven.org/maven2/org/mobilenativefoundation/store/store5-<target>/<v>/...pom`
+// koin-core publishes every remaining target, so it adds no constraint.
+//
+// Store5 was REMOVED (it capped this module at 8): `auth-kt` already owns session lifecycle,
+// persistence and refresh, so a second cache layer would have been a second owner of the same
+// state — see AuthSessionStore's KDoc.
+//
+// Re-measure before widening:
+//   curl -o /dev/null -w '%{http_code}' \
+//     https://repo1.maven.org/maven2/io/github/jan-tennert/supabase/auth-kt-<target>/3.8.0/...pom
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 @OptIn(ExperimentalKotlinGradlePluginApi::class, ExperimentalWasmDsl::class)
 kotlin {
@@ -61,34 +66,42 @@ kotlin {
         }
     }
 
-    // iOS — all three. compose-auth publishes iosX64, and this module carries no Compose, so
-    // unlike cmp-supabase-auth-compose it is free to declare it.
+    // Apple — every target auth-kt publishes. Unlike cmp-supabase-auth-compose (capped at 6 by
+    // Compose + compose-auth), nothing here carries Compose, so the full Apple set is reachable.
     //
     // The linker options are NOT optional. supabase-kt pulls
     // `dev.whyoleg.cryptography:cryptography-provider-cryptokit`, whose CryptoKit interop is
     // written in Swift; linking it needs the Swift compatibility shims, which the Kotlin/Native
     // linker does not add on its own. Without them every *test* binary fails with
-    // `Undefined symbols: __swift_FORCE_LOAD_$_swiftCompatibility56`. Resolved from the ACTIVE
-    // Xcode via xcrun rather than hardcoded, so this survives an Xcode upgrade or a different
-    // install path on CI.
-    // HOST-GATED: `xcrun` exists only on macOS, and this resolves at CONFIGURATION time, so an
-    // ungated call aborts the whole build on a Linux runner — which is every ubuntu CI job,
-    // including ones that never touch an Apple target. Apple targets cannot be built off macOS
-    // anyway, so skipping the linker options there loses nothing.
+    // `Undefined symbols: __swift_FORCE_LOAD_$_swiftCompatibility56`.
+    //
+    // HOST-GATED: `xcrun` exists only on macOS and resolves at CONFIGURATION time, so an ungated
+    // call aborts the build on every Linux runner — including jobs that never touch Apple.
     val isMacOs = System.getProperty("os.name").startsWith("Mac", ignoreCase = true)
-    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
-        if (!isMacOs) return@forEach
-        // iosX64 is the INTEL SIMULATOR, but its konan name is `ios_x64` with no
-        // "simulator" in it — matching on the name alone sends it to the device SDK
-        // and the link fails. Only iosArm64 is a real device target.
-        val sdk = if (target.konanTarget.name == "ios_arm64") "iphoneos" else "iphonesimulator"
-        target.binaries.all {
-            linkerOpts("-L${swiftLibraryPath(sdk)}")
+    val appleTargets =
+        listOf(
+            iosX64(),
+            iosArm64(),
+            iosSimulatorArm64(),
+            macosX64(),
+            macosArm64(),
+            tvosX64(),
+            tvosArm64(),
+            tvosSimulatorArm64(),
+            watchosX64(),
+            watchosArm64(),
+            watchosSimulatorArm64(),
+        )
+    if (isMacOs) {
+        appleTargets.forEach { target ->
+            val sdk = appleSdkFor(target.konanTarget.name)
+            target.binaries.all { linkerOpts("-L${swiftLibraryPath(sdk)}") }
         }
     }
 
-    // Linux x64 only — store5 publishes no linuxArm64.
+    // linuxX64 only — auth-kt publishes no linuxArm64.
     linuxX64()
+    mingwX64()
 
     js {
         browser {
@@ -118,11 +131,6 @@ kotlin {
             // without reimplementing Credential Manager and ASAuthorization by hand.
             api(libs.supabase.auth)
 
-            // Store5 backs the session store: memory-only, Fetcher.ofFlow over GoTrue's
-            // sessionStatus. NOT disk-cached — GoTrue already persists and refreshes, and
-            // re-caching would show a signed-in user after the real token had expired.
-            api(libs.store5)
-
             // The DI surface consumers wire with one line.
             api(libs.koin.core)
 
@@ -143,6 +151,35 @@ kotlin {
  * `xcrun --find swiftc` locates the toolchain the machine is actually using, so this keeps
  * working across Xcode versions and non-default install locations instead of pinning one path.
  */
+fun appleSdkFor(konanTargetName: String): String =
+    when {
+        konanTargetName.startsWith("ios") -> {
+            if (konanTargetName == "ios_arm64") "iphoneos" else "iphonesimulator"
+        }
+
+        konanTargetName.startsWith("macos") -> {
+            "macosx"
+        }
+
+        konanTargetName.startsWith("tvos") -> {
+            if (konanTargetName == "tvos_arm64") "appletvos" else "appletvsimulator"
+        }
+
+        konanTargetName.startsWith("watchos") -> {
+            if (konanTargetName.endsWith("arm64") &&
+                !konanTargetName.contains("simulator")
+            ) {
+                "watchos"
+            } else {
+                "watchsimulator"
+            }
+        }
+
+        else -> {
+            error("No Apple SDK mapping for konan target '$konanTargetName'")
+        }
+    }
+
 fun swiftLibraryPath(sdk: String): String {
     val swiftc =
         providers
@@ -231,5 +268,13 @@ mavenPublishing {
 // RE-ENABLE WHEN: `./gradlew :cmp-supabase-auth:wasmJsBrowserTest` passes after a KGP or
 // kotlinx-io bump — delete this block and run it. Do not widen it to other targets.
 tasks.matching { it.name == "wasmJsBrowserTest" }.configureEach {
+    enabled = false
+}
+
+// Xcode does not provide a watchOS *simulator* test runner for watchos_simulator_arm64 — the
+// task fails at property evaluation ("Check that requested SDK is installed"), which is an Xcode
+// capability gap, not a code problem. The TARGET still compiles, links and publishes; only its
+// simulator test execution is unavailable. watchosX64/watchosArm64 are unaffected.
+tasks.matching { it.name == "watchosSimulatorArm64Test" }.configureEach {
     enabled = false
 }
