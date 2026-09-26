@@ -1,0 +1,21 @@
+# Mirror docs/ → GitHub Wiki via the reusable workflow in mbl-actionhub.
+# Logic lives in mbl-actionhub@v1.8.0 → mbl-actionhub-docshub@v0.2.0;
+# this file only configures triggers.
+
+name: Sync docs to Wiki
+
+on:
+  push:
+    branches:
+      - development
+    paths:
+      - 'docs/**'
+      - '.github/workflows/sync-docs-to-wiki.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/sync-docs-to-wiki.yml@v1.8.0
