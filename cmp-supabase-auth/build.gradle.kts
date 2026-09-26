@@ -71,7 +71,13 @@ kotlin {
     // `Undefined symbols: __swift_FORCE_LOAD_$_swiftCompatibility56`. Resolved from the ACTIVE
     // Xcode via xcrun rather than hardcoded, so this survives an Xcode upgrade or a different
     // install path on CI.
+    // HOST-GATED: `xcrun` exists only on macOS, and this resolves at CONFIGURATION time, so an
+    // ungated call aborts the whole build on a Linux runner — which is every ubuntu CI job,
+    // including ones that never touch an Apple target. Apple targets cannot be built off macOS
+    // anyway, so skipping the linker options there loses nothing.
+    val isMacOs = System.getProperty("os.name").startsWith("Mac", ignoreCase = true)
     listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { target ->
+        if (!isMacOs) return@forEach
         // iosX64 is the INTEL SIMULATOR, but its konan name is `ios_x64` with no
         // "simulator" in it — matching on the name alone sends it to the device SDK
         // and the link fails. Only iosArm64 is a real device target.
