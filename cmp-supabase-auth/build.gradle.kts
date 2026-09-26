@@ -101,10 +101,6 @@ kotlin {
         nodejs()
     }
 
-    // nodejs only for tests. The browser variant needs a headless Chrome the CI image does not
-    // reliably provide, and its test task then fails with "no tests discovered" rather than
-    // skipping — a false red that says nothing about the code. The same commonTest suite runs on
-    // jvm, native, js-node and wasmJs-node, so coverage is unaffected.
     wasmJs {
         browser()
         nodejs()
@@ -204,10 +200,36 @@ mavenPublishing {
     }
 }
 
-// See the wasmJs/js target comments: the browser test tasks need a headless Chrome that is not
-// dependable here, and they hard-fail on "no tests discovered" instead of skipping. The same
-// commonTest suite still executes on jvm, native, and the js/wasmJs *node* targets, so this
-// removes a false red without removing coverage.
-tasks.matching { it.name == "wasmJsBrowserTest" || it.name == "jsBrowserTest" }.configureEach {
+// ── wasmJsBrowserTest: disabled, with a specific reason and a re-enable condition ────────────
+//
+// `jsBrowserTest`, `jsNodeTest` and `wasmJsNodeTest` all RUN and pass — only this one task is
+// disabled, and only because of an upstream interaction we cannot configure around:
+//
+//   Uncaught SyntaxError: Cannot use 'import.meta' outside a module
+//     at _karma_webpack_*/commons.js:18368
+//
+// The source is kotlinx-io's Node bindings, reached transitively via
+// supabase-kt -> ktor -> kotlinx-io:
+//
+//   'kotlinx.io.node.getRequire' : () => {
+//       const importMeta = import.meta;
+//       return globalThis.module.default.createRequire(...)
+//   }
+//
+// Karma serves the bundle with a classic <script src>, where `import.meta` is a PARSE error, so
+// the suite dies before any test runs. Being unreachable Node-only code does not help.
+//
+// The usual webpack escape hatch (`module.parser.javascript.importMeta = false`, or forcing ESM
+// output) cannot be applied: KGP does not feed `webpack.config.d/` into the wasm KARMA bundle —
+// verified by adding a config there and confirming the generated karma.conf.js `extraJs` section
+// stays empty. The fix belongs upstream, in KGP or kotlinx-io.
+//
+// Coverage is NOT lost: the same commonTest suite executes on jvm, iosX64/iosArm64/iosSimulator,
+// linuxX64, android, jsBrowser, jsNode and wasmJsNode. Browser-specific wasm behaviour is the
+// only gap, and this module has no browser-specific code.
+//
+// RE-ENABLE WHEN: `./gradlew :cmp-supabase-auth:wasmJsBrowserTest` passes after a KGP or
+// kotlinx-io bump — delete this block and run it. Do not widen it to other targets.
+tasks.matching { it.name == "wasmJsBrowserTest" }.configureEach {
     enabled = false
 }
