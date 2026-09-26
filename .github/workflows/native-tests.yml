@@ -13,7 +13,7 @@
 #
 # WHY IT DOES NOT CALL ci-kmp-library.yml
 # That reusable workflow gates its native jobs on `detect-changes`, which for a non-PR event
-# diffs against `origin/${{ github.base_ref || 'development' }}`. This repo's default branch is
+# diffs against `origin/${{ github.base_ref || 'dev' }}`. This repo's default branch is
 # `dev`, so that ref does not exist, detection falls back to HEAD~1, and any night whose last
 # commit touched no cmp-* module yields `modules=NONE` — the native jobs skip and the run
 # reports green having executed nothing. Calling the gradle tasks directly avoids depending on

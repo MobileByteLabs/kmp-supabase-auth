@@ -15,11 +15,10 @@ run-name: "📚 Docs refresh · ${{ github.event.pull_request.title || github.re
 #                    It must not push to a contributor's branch: a fork PR has no write token,
 #                    and rewriting someone's branch mid-review is hostile.
 #
-#   push to development
-#                 →  REFRESH, land it on the default branch, then deploy. `development` is not
-#                    protected here, so the refresh lands directly rather than opening a PR
-#                    nobody would review — the content is machine-generated and byte-identical
-#                    to what the gate demands. If branch protection is added later, switch this
+#   push to dev   →  REFRESH, land it on the default branch, then deploy. `dev` is not protected
+#                    here, so the refresh lands directly rather than opening a PR nobody would
+#                    review — the content is machine-generated and byte-identical to what the
+#                    gate demands. If branch protection is added later, switch this
 #                    to peter-evans/create-pull-request the way kmp-project-template's
 #                    docs-refresh.yml does.
 #
@@ -41,7 +40,7 @@ on:
       - 'docs/**'
       - '.github/workflows/docs-refresh.yml'
   push:
-    branches: [development]
+    branches: [dev]
     paths:
       - 'cmp-*/build.gradle.kts'
       - 'cmp-*/api/**'

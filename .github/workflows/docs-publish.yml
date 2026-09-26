@@ -21,7 +21,7 @@ run-name: "📚 Docs · ${{ github.event.pull_request.title || github.ref_name }
 
 on:
   push:
-    branches: [development]
+    branches: [dev]
     paths:
       - 'docs/**'
       - 'README.md'

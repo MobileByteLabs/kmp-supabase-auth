@@ -1,7 +1,7 @@
 # CI Workflow — delegates to mbl-actionhub reusable CI workflow
 #
 # Triggers:
-#   - push to main or development (full build)
+#   - push to main or dev (full build)
 #   - workflow_call (invoked by publish.yml before every Maven publish)
 #
 # PRs are handled separately by pr-check.yml (fast gate, no iOS/Linux).
@@ -10,7 +10,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "development" ]
+    branches: [ "main", "dev" ]
   workflow_call:
 
 permissions:
