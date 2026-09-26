@@ -13,6 +13,57 @@
       --sidebar-width: 17rem;
     }
     .app-name-link img { max-width: 70%; }
+    /* Cover page. The background lives here rather than in _coverpage.md's `![color]`
+       directive — see the note in that file. */
+    section.cover {
+      background: linear-gradient(160deg, #0b1f18 0%, #10231c 45%, #12161c 100%) !important;
+    }
+    section.cover .cover-main { color: #e6edf3; }
+    section.cover .cover-main > p:not(:last-child) { color: #b8c7c0; }
+    /* docsify's vue theme colours the cover title through `.cover h1 a` and wins on
+       specificity, so the plain `h1` rule alone left the title near-illegible on the dark
+       background. Match its selector and add !important rather than fight it. */
+    /* docsify renders the cover title as h1 > a.anchor > span, and the SPAN is what carries the
+       theme colour — setting h1/a alone computed to white while the visible text stayed grey.
+       Verified in-browser: h1 and a both reported rgb(255,255,255) while the page looked muted. */
+    section.cover .cover-main > h1,
+    section.cover h1 a,
+    section.cover h1 a span { color: #ffffff !important; font-weight: 700; }
+    /* Baseline-align the version chip instead of letting it sink below the title. */
+    section.cover h1 small {
+      display: inline-block;
+      vertical-align: super;
+      margin-left: 0.35rem;
+      font-size: 0.34em;
+      font-weight: 600;
+      opacity: 0.75;
+      color: var(--theme-color) !important;
+    }
+    /* The navbar overlays BOTH the dark cover and the light content pages, so a single colour
+       is wrong on one of them — colouring it for the cover left it near-invisible on white.
+       docsify adds `.show` to section.cover only while the cover is displayed; key off that. */
+    body .app-nav a { color: #44555c; }
+    body .app-nav a:hover { color: var(--theme-color); }
+    body:has(section.cover.show) .app-nav a { color: #cfdbd5; }
+    body:has(section.cover.show) .app-nav a:hover { color: var(--theme-color); }
+    @media (prefers-color-scheme: dark) {
+      body .app-nav a { color: #b3c0c9; }
+    }
+    section.cover .cover-main > p:last-child a {
+      border-radius: 6px;
+      padding: 0.6em 1.4em;
+      font-weight: 600;
+    }
+    section.cover .cover-main > p:last-child a:first-child {
+      background-color: var(--theme-color);
+      border-color: var(--theme-color);
+      color: #06231a;
+    }
+    section.cover blockquote { color: #9fb3ab; border-left: none; background: none; }
+    section.cover ul li { color: #cfdbd5; }
+    section.cover code { background: rgba(62,207,142,0.12); color: #7ee2b8; }
+    section.cover ul { line-height: 1.9; }
+
     .markdown-section code { border-radius: 3px; }
     .markdown-section table { display: table; width: 100%; }
     /* Callouts used across the setup guides */
@@ -37,6 +88,15 @@
       repo: 'MobileByteLabs/kmp-supabase-auth',
       loadSidebar: true,
       loadNavbar: true,
+      coverpage: true,
+      // With loadSidebar/loadNavbar, docsify probes for a DIRECTORY-LOCAL _sidebar.md before
+      // falling back to the root one — so browsing into cmp-supabase-auth/ produced a pair of
+      // harmless-but-noisy 404s per page load. There is only ever one sidebar here; alias every
+      // lookup to it so the console stays clean and a real 404 is actually visible.
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md',
+        '/.*/_navbar.md': '/_navbar.md',
+      },
       subMaxLevel: 3,
       auto2top: true,
       relativePath: true,
@@ -54,8 +114,10 @@
         crossChapter: true,
         crossChapterText: true,
       },
-      // The repo root README is the landing page, so the docs site and GitHub never drift.
-      homepage: 'README.md',
+      // A dedicated docs landing page, NOT the repo README: the README is written for someone
+      // browsing GitHub (badges, status table, contributing), while this is written for someone
+      // who arrived to learn the library. Reusing the README made the site read like a repo.
+      homepage: 'docs/home.md',
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>

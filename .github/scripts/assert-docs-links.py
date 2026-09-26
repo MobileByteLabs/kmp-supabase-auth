@@ -13,7 +13,15 @@ import re
 import sys
 
 LINK = re.compile(r"\]\(([^)\s]+)")
-SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "<")
+# Links inside HTML comments are never rendered, so they cannot 404 — but a comment EXPLAINING
+# a link (e.g. documenting docsify's `![color](...)` directive) would otherwise be flagged.
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
+SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "<", "data:")
+
+# docsify cover pages carry styling directives in link position — `![color](linear-gradient(...))`
+# and `![color](#hex)`. They are instructions to docsify, not files, and flagging them would make
+# the gate cry wolf on a page that is perfectly correct.
+SKIP_CONTAINS = ("linear-gradient", "radial-gradient", "rgb(", "hsl(")
 
 
 def main(site: str) -> int:
@@ -24,14 +32,21 @@ def main(site: str) -> int:
                 continue
             page = os.path.join(root, name)
             with open(page, encoding="utf-8", errors="replace") as fh:
-                body = fh.read()
+                body = HTML_COMMENT.sub("", fh.read())
             for target in LINK.findall(body):
                 if target.startswith(SKIP_PREFIXES) or not target:
+                    continue
+                if any(token in target for token in SKIP_CONTAINS):
                     continue
                 path = target.split("#", 1)[0]
                 if not path:
                     continue
-                resolved = os.path.normpath(os.path.join(root, path))
+                # A leading "/" is SITE-root-relative (docsify), not filesystem-absolute —
+                # the sidebar uses that form so it stays correct on every page.
+                if path.startswith("/"):
+                    resolved = os.path.normpath(os.path.join(site, path.lstrip("/")))
+                else:
+                    resolved = os.path.normpath(os.path.join(root, path))
                 if not os.path.exists(resolved):
                     missing.append((os.path.relpath(page, site), target))
 
