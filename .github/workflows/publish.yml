@@ -34,10 +34,10 @@ jobs:
   publish:
     uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.9.1
     with:
-      module-pattern: 'auth-'
+      module-pattern: 'cmp-'
       module: ${{ inputs.module || '' }}
       group-id: 'io.github.mobilebytelabs'
-      artifact-id: 'auth-core'
+      artifact-id: 'cmp-supabase-auth'
       version: ${{ inputs.version || '' }}
       verify-against-maven: false           # set true once your library is on Maven Central
       bump-after-release: false

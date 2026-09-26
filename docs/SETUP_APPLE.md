@@ -8,7 +8,7 @@ Apple's setup is longer than Google's and has one genuinely dangerous property: 
 secret expires**. Read §5 before you ship.
 
 > **Read this first — macOS has no native path.** `compose-auth` publishes no macOS artifact at
-> all, so `auth-compose` does not reach macOS. macOS consumers use `auth-core` plus the web-OAuth
+> all, so `cmp-supabase-auth-compose` does not reach macOS. macOS consumers use `cmp-supabase-auth` plus the web-OAuth
 > fallback. This is measured, not an oversight — see [TARGET_MATRIX.md](../TARGET_MATRIX.md).
 >
 > **You need the Services ID even for a mobile-only app.** Desktop, web and macOS all take the
@@ -123,7 +123,7 @@ scheme half of `redirectUrl`.
 
 ### Android
 
-**`auth-core` ships the intent-filter for you** in its `androidMain` manifest; it merges into your
+**`cmp-supabase-auth` ships the intent-filter for you** in its `androidMain` manifest; it merges into your
 app automatically. You do not add anything.
 
 This matters because it is a real bug the library exists to fix. A production app in this
@@ -156,12 +156,12 @@ redirect allowlist.
 |---|---|
 | Worked for months, now fails for everyone | **Client secret expired** — see §5 |
 | `invalid_client` | Services ID mismatch, or JWT `sub` is not the Services ID |
-| Browser opens on Android and never returns | Intent-filter missing — should not happen with `auth-core`, check manifest merge |
+| Browser opens on Android and never returns | Intent-filter missing — should not happen with `cmp-supabase-auth`, check manifest merge |
 | Native sheet never appears on iOS | Entitlement missing, or capability not enabled on the App ID |
 | Nothing available on macOS | Expected — `compose-auth` ships no macOS artifact; use the web-OAuth fallback |
 
 ## Related
 
 - [SETUP_GOOGLE.md](SETUP_GOOGLE.md)
-- [auth-compose README](../auth-compose/README.md)
+- [cmp-supabase-auth-compose README](../cmp-supabase-auth-compose/README.md)
 - [TARGET_MATRIX.md](../TARGET_MATRIX.md)

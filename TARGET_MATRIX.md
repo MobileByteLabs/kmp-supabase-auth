@@ -16,14 +16,14 @@ ships against it. When the two disagree, the upstream page wins and this file is
 
 | Module | Targets | Dropped | Why |
 |---|---|---|---|
-| `auth-core` | **8** | macOS ×2, tvOS ×3, watchOS ×4, `mingwX64`, `linuxArm64`, `wasmWasi` | `store5` 5.1.0-beta01 publishes none of them |
-| `auth-compose` | **6** | the above, plus `iosX64` and `macosArm64` | `compose-auth` publishes **no macOS artifact**; Compose Multiplatform itself publishes no `iosX64` |
+| `cmp-supabase-auth` | **8** | macOS ×2, tvOS ×3, watchOS ×4, `mingwX64`, `linuxArm64`, `wasmWasi` | `store5` 5.1.0-beta01 publishes none of them |
+| `cmp-supabase-auth-compose` | **6** | the above, plus `iosX64` and `macosArm64` | `compose-auth` publishes **no macOS artifact**; Compose Multiplatform itself publishes no `iosX64` |
 
-`auth-core` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64` `iosX64` `linuxX64`
+`cmp-supabase-auth` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64` `iosX64` `linuxX64`
 
-`auth-compose` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64`
+`cmp-supabase-auth-compose` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64`
 
-`sample-app` is not published and is excluded from `module-pattern: 'auth-'` in CI.
+`sample-app` is not published and is excluded from `module-pattern: 'cmp-'` in CI.
 
 ---
 
@@ -35,9 +35,9 @@ ships against it. When the two disagree, the upstream page wins and this file is
 | `compose-auth` | 3.8.0 | 7 | **all macOS** |
 | `compose-auth-ui` | 3.8.0 | 7 | **all macOS** |
 | `store5` | 5.1.0-beta01 | 8 | macOS ×2, tvOS ×3, watchOS ×4, `mingwX64`, `linuxArm64`, `wasmWasi` |
-| Compose Multiplatform | 1.11.0 | 7 | **`iosX64`**, `macosX64` |
+| Compose Multiplatform | 1.12.0 | 7 | **`iosX64`**, `macosX64` |
 
-**`store5` is the binding constraint on `auth-core`.** It is also currently a *beta*. Both facts
+**`store5` is the binding constraint on `cmp-supabase-auth`.** It is also currently a *beta*. Both facts
 argue for keeping the session store behind an interface, which it is — swapping to a plain
 `StateFlow` holder is a one-file change.
 
@@ -45,11 +45,11 @@ argue for keeping the session store behind an interface, which it is — swappin
 
 ## 3. Two consequences worth stating plainly
 
-**No native Apple sign-in on macOS.** `compose-auth` ships no macOS artifact, so `auth-compose`
-cannot reach macOS at all. macOS consumers take `auth-core` and the web-OAuth fallback. This is
+**No native Apple sign-in on macOS.** `compose-auth` ships no macOS artifact, so `cmp-supabase-auth-compose`
+cannot reach macOS at all. macOS consumers take `cmp-supabase-auth` and the web-OAuth fallback. This is
 documented in [docs/SETUP_APPLE.md](docs/SETUP_APPLE.md) rather than left to surface at link time.
 
-**`auth-core` reaches `iosX64` but `auth-compose` does not.** Different causes: `compose-auth`
+**`cmp-supabase-auth` reaches `iosX64` but `cmp-supabase-auth-compose` does not.** Different causes: `compose-auth`
 *does* publish `iosX64`, but Compose Multiplatform does not. A Compose-bearing module can never
 match its headless sibling's matrix anyway — the Compose compiler plugin applies to every
 compilation in a module and fails on any target lacking the runtime. Confining Compose to an
@@ -63,7 +63,7 @@ intermediate source set does not work; that is why the library ships as a headle
 the rest of the module still ships everywhere.
 
 That rule does **not** apply when the dependency *is* the module's reason to exist, which is the
-case for `store5` and `auth-kt` in `auth-core`: there is no meaningful auth-core without a session
+case for `store5` and `auth-kt` in `cmp-supabase-auth`: there is no meaningful `cmp-supabase-auth` without a session
 store and a GoTrue client, so a target that cannot resolve them has nothing to receive.
 
 ---

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run a Kotlin/Native test task across the auth-* LIBRARY modules, skipping the sample apps.
+# Run a Kotlin/Native test task across the cmp-* LIBRARY modules, skipping the sample apps.
 #
 # WHY THE SAMPLES ARE EXCLUDED
 # `./gradlew iosSimulatorArm64Test` from the root runs that task in EVERY project declaring the
@@ -78,7 +78,7 @@ while IFS= read -r project; do
 done < <(grep -oE 'include\("(:samples:[^"]*|:sample-app)"\)' "$SETTINGS" | sed -e 's/^include("//' -e 's/")$//')
 
 if [ "$EXCLUDED" -gt 0 ]; then
-  echo "Running ${TASK} across the auth-* modules — excluding ${EXCLUDED} sample app(s) that declare ${TARGET}."
+  echo "Running ${TASK} across the cmp-* modules — excluding ${EXCLUDED} sample app(s) that declare ${TARGET}."
 else
   echo "Running ${TASK}: no sample app declares ${TARGET} (${SKIPPED} checked), so nothing to exclude."
 fi

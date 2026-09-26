@@ -103,7 +103,7 @@ OAuth redirect rather than throwing. That is deliberate, so a half-configured pr
 ## 5. Android callback
 
 Needed only for the **OAuth-redirect** path (which on Android means Apple sign-in, since Google is
-native). `auth-core` ships the intent-filter in its `androidMain` manifest and it merges into your
+native). `cmp-supabase-auth` ships the intent-filter in its `androidMain` manifest and it merges into your
 app automatically — you do not add anything. See [SETUP_APPLE.md](SETUP_APPLE.md).
 
 ## 6. Verify
@@ -124,12 +124,12 @@ console configuration from app wiring.
 |---|---|
 | Sheet opens, then "something went wrong" | Wrong client id — Android's instead of Web's |
 | Works on debug, fails from Play Store | Play App Signing SHA-1 not registered |
-| Sign-in succeeds but the app stays on the spinner | UI keyed on the provider callback instead of the session stream — see [auth-compose](../auth-compose/README.md) |
+| Sign-in succeeds but the app stays on the spinner | UI keyed on the provider callback instead of the session stream — see [cmp-supabase-auth-compose](../cmp-supabase-auth-compose/README.md) |
 | `redirect_uri_mismatch` | Callback URL missing from Supabase's allowlist, or differs from `redirectUrl` |
 | Nothing happens on tap | `googleWebClientId` blank — the library degraded to OAuth redirect by design |
 
 ## Related
 
 - [SETUP_APPLE.md](SETUP_APPLE.md)
-- [auth-core README](../auth-core/README.md)
+- [cmp-supabase-auth README](../cmp-supabase-auth/README.md)
 - [TARGET_MATRIX.md](../TARGET_MATRIX.md)

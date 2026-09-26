@@ -62,7 +62,7 @@ kotlin {
     }
 
     // iOS — all three. compose-auth publishes iosX64, and this module carries no Compose, so
-    // unlike auth-compose it is free to declare it.
+    // unlike cmp-supabase-auth-compose it is free to declare it.
     //
     // The linker options are NOT optional. supabase-kt pulls
     // `dev.whyoleg.cryptography:cryptography-provider-cryptokit`, whose CryptoKit interop is
@@ -164,7 +164,7 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "auth-core", version.toString())
+    coordinates(group.toString(), "cmp-supabase-auth", version.toString())
 
     pom {
         name = "KMP Supabase Auth — Core"

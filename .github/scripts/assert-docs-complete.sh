@@ -29,7 +29,7 @@ cd "$(dirname "$0")/../.."
 FAILED=0
 CHECKED=0
 
-for gradle_file in auth-*/build.gradle.kts; do
+for gradle_file in cmp-*/build.gradle.kts; do
     module="$(dirname "$gradle_file")"
     CHECKED=$((CHECKED + 1))
 
@@ -78,7 +78,7 @@ for gradle_file in auth-*/build.gradle.kts; do
 done
 
 if [ "$CHECKED" -eq 0 ]; then
-    echo "FAIL no auth-*/build.gradle.kts matched — the glob or the layout changed"
+    echo "FAIL no cmp-*/build.gradle.kts matched — the glob or the layout changed"
     exit 1
 fi
 

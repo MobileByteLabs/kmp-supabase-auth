@@ -1,20 +1,20 @@
-# auth-core
+# cmp-supabase-auth
 
 > **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
 > which KMP targets every module ships and why.
 
 Headless half of **KMP Supabase Auth**. Configuration, the Supabase client boundary, a
 Store5-backed session store, the repository, and the Koin wiring. No Compose — the UI lives in
-[auth-compose](../auth-compose/README.md).
+[cmp-supabase-auth-compose](../cmp-supabase-auth-compose/README.md).
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Install
 
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:auth-core:0.1.0")
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")
 }
 ```
 
@@ -123,6 +123,6 @@ code. See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
 
 ## Related
 
-- [auth-compose](../auth-compose/README.md) — Compose UI
+- [cmp-supabase-auth-compose](../cmp-supabase-auth-compose/README.md) — Compose UI
 - [TARGET_MATRIX.md](../TARGET_MATRIX.md) — measured target policy
 - [DEVELOPMENT.md](DEVELOPMENT.md) — contributor docs

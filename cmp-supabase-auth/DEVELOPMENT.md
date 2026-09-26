@@ -1,6 +1,6 @@
 ---
-module: auth-core
-artifact: io.github.mobilebytelabs:auth-core
+module: cmp-supabase-auth
+artifact: io.github.mobilebytelabs:cmp-supabase-auth
 version: 0.1.0
 package: io.github.mobilebytelabs.supabaseauth
 api_tier: experimental
@@ -9,17 +9,17 @@ goal_plan_ref: plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-supabase-auth
 adr_refs: []
 ---
 
-# auth-core — Development
+# cmp-supabase-auth — Development
 
 Headless half of KMP Supabase Auth. Owns configuration, the Supabase client boundary, the
 Store5-backed session store, the repository, and the Koin wiring. No Compose — see
-[auth-compose](../auth-compose/DEVELOPMENT.md) for the UI half.
+[cmp-supabase-auth-compose](../cmp-supabase-auth-compose/DEVELOPMENT.md) for the UI half.
 
 ## §1 Module Identity
 
 | Field | Value |
 |---|---|
-| Artifact | `io.github.mobilebytelabs:auth-core` |
+| Artifact | `io.github.mobilebytelabs:cmp-supabase-auth` |
 | Package | `io.github.mobilebytelabs.supabaseauth` |
 | Targets | **8** — see [TARGET_MATRIX.md](../TARGET_MATRIX.md) |
 | API tier | experimental (pre-1.0; BCV baselines committed under `api/`) |
@@ -28,10 +28,10 @@ Store5-backed session store, the repository, and the Koin wiring. No Compose —
 
 | Target | Status | Notes |
 |---|---|---|
-| android | ✅ | Native Google via Credential Manager (in auth-compose) |
+| android | ✅ | Native Google via Credential Manager (in cmp-supabase-auth-compose) |
 | jvm | ✅ | Desktop; system-browser OAuth redirect |
 | js / wasmJs | ✅ | GoTrue OAuth redirect |
-| iosArm64 / iosSimulatorArm64 / iosX64 | ✅ | Native Apple available via auth-compose (arm64 + simulator only) |
+| iosArm64 / iosSimulatorArm64 / iosX64 | ✅ | Native Apple available via cmp-supabase-auth-compose (arm64 + simulator only) |
 | linuxX64 | ✅ | OAuth redirect |
 | macOS / tvOS / watchOS / mingwX64 / linuxArm64 | ❌ | `store5` 5.1.0-beta01 publishes no artifact |
 
@@ -42,7 +42,7 @@ Dropped targets are a **measurement**, not a preference. Re-probe Maven Central 
 Generated from `api/*.api` by Binary Compatibility Validator. Regenerate with:
 
 ```bash
-./gradlew :auth-core:apiDump
+./gradlew :cmp-supabase-auth:apiDump
 ```
 
 Current surface: `SupabaseAuthConfig`, `SupabaseAuth`.
@@ -87,7 +87,7 @@ the target — unless the dependency *is* the module's reason to exist, as `stor
 - [README.md](README.md) — consumer-facing docs
 - [../TARGET_MATRIX.md](../TARGET_MATRIX.md) — target policy, measured
 - [../docs/SETUP_GOOGLE.md](../docs/SETUP_GOOGLE.md) · [../docs/SETUP_APPLE.md](../docs/SETUP_APPLE.md)
-- [../auth-compose/DEVELOPMENT.md](../auth-compose/DEVELOPMENT.md)
+- [../cmp-supabase-auth-compose/DEVELOPMENT.md](../cmp-supabase-auth-compose/DEVELOPMENT.md)
 
 ## §9 Observability Surface
 

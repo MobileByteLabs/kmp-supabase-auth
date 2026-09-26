@@ -1,6 +1,6 @@
 ---
-module: auth-compose
-artifact: io.github.mobilebytelabs:auth-compose
+module: cmp-supabase-auth-compose
+artifact: io.github.mobilebytelabs:cmp-supabase-auth-compose
 version: 0.1.0
 package: io.github.mobilebytelabs.supabaseauth.compose
 api_tier: experimental
@@ -9,17 +9,17 @@ goal_plan_ref: plan-layer/project-plans/mbs/kmp-toolkit/active/cmp-supabase-auth
 adr_refs: []
 ---
 
-# auth-compose — Development
+# cmp-supabase-auth-compose — Development
 
 Compose Multiplatform half of KMP Supabase Auth. Owns the `remember*` sign-in wrappers,
 brand-compliant provider buttons, the drop-in login screen and the ViewModel. Depends on
-[auth-core](../auth-core/DEVELOPMENT.md), which owns everything headless.
+[cmp-supabase-auth](../cmp-supabase-auth/DEVELOPMENT.md), which owns everything headless.
 
 ## §1 Module Identity
 
 | Field | Value |
 |---|---|
-| Artifact | `io.github.mobilebytelabs:auth-compose` |
+| Artifact | `io.github.mobilebytelabs:cmp-supabase-auth-compose` |
 | Package | `io.github.mobilebytelabs.supabaseauth.compose` |
 | Targets | **6** — see [TARGET_MATRIX.md](../TARGET_MATRIX.md) |
 | API tier | experimental (pre-1.0; BCV baselines committed under `api/`) |
@@ -33,19 +33,19 @@ brand-compliant provider buttons, the drop-in login screen and the ViewModel. De
 | js / wasmJs | ✅ | GoTrue OAuth redirect |
 | iosArm64 / iosSimulatorArm64 | ✅ | Native Apple sign-in via ASAuthorization |
 | iosX64 | ❌ | Compose Multiplatform 1.11.0 publishes no iosX64 artifact |
-| macOS | ❌ | `compose-auth` publishes **no macOS artifact at all** — so there is **no native Apple sign-in on macOS**; macOS consumers take auth-core plus the web-OAuth fallback |
+| macOS | ❌ | `compose-auth` publishes **no macOS artifact at all** — so there is **no native Apple sign-in on macOS**; macOS consumers take cmp-supabase-auth plus the web-OAuth fallback |
 
-Two targets fewer than auth-core, for two DIFFERENT reasons. Both measured, neither a preference.
+Two targets fewer than cmp-supabase-auth, for two DIFFERENT reasons. Both measured, neither a preference.
 
 ## §3 Public API Surface
 
 Generated from `api/*.api` by Binary Compatibility Validator. Regenerate with:
 
 ```bash
-./gradlew :auth-compose:apiDump
+./gradlew :cmp-supabase-auth-compose:apiDump
 ```
 
-Current surface: empty — the UI lands on top of auth-core's client and repository.
+Current surface: empty — the UI lands on top of cmp-supabase-auth's client and repository.
 
 ## §4 Spec Snapshot
 
@@ -82,7 +82,7 @@ Confining Compose to an intermediate source set does not work — it was tried a
 - [README.md](README.md) — consumer-facing docs
 - [../TARGET_MATRIX.md](../TARGET_MATRIX.md) — target policy, measured
 - [../docs/SETUP_GOOGLE.md](../docs/SETUP_GOOGLE.md) · [../docs/SETUP_APPLE.md](../docs/SETUP_APPLE.md)
-- [../auth-core/DEVELOPMENT.md](../auth-core/DEVELOPMENT.md)
+- [../cmp-supabase-auth/DEVELOPMENT.md](../cmp-supabase-auth/DEVELOPMENT.md)
 
 ## §9 Observability Surface
 

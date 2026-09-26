@@ -19,14 +19,14 @@ group = "io.github.mobilebytelabs"
 version = providers.gradleProperty("supabaseauth.version").get()
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
-// TARGETS — 6, two fewer than auth-core. Both losses are MEASURED, and they have DIFFERENT causes:
+// TARGETS — 6, two fewer than cmp-supabase-auth. Both losses are MEASURED, and they have DIFFERENT causes:
 //
 //   macOS   — compose-auth 3.8.0 publishes NO macOS artifact at all (verified HTTP 404 for both
 //             compose-auth-macosarm64 and compose-auth-macosx64, 2026-09-26). Consequence for
 //             users: there is NO native Apple sign-in on macOS through this library; macOS
-//             consumers take auth-core plus the web-OAuth fallback. Said plainly in SETUP_APPLE.md
+//             consumers take cmp-supabase-auth plus the web-OAuth fallback. Said plainly in SETUP_APPLE.md
 //             rather than left to surface at link time.
-//   iosX64  — Compose Multiplatform itself publishes no iosX64 artifact. auth-core DOES declare
+//   iosX64  — Compose Multiplatform itself publishes no iosX64 artifact. cmp-supabase-auth DOES declare
 //             iosX64 because it carries no Compose; only this module has to drop it.
 //
 // A Compose module can never match its headless sibling's matrix anyway: the Compose compiler
@@ -89,8 +89,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             // `api`: SupabaseLoginScreen takes an AuthRepository and a SupabaseAuthClient, both
-            // auth-core types, so every consumer of this module needs them on the compile path.
-            api(project(":auth-core"))
+            // cmp-supabase-auth types, so every consumer of this module needs them on the compile path.
+            api(project(":cmp-supabase-auth"))
 
             // rememberSignInWithGoogle() / rememberSignInWithApple() — the native flows.
             api(libs.supabase.compose.auth)
@@ -123,7 +123,7 @@ mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
 
-    coordinates(group.toString(), "auth-compose", version.toString())
+    coordinates(group.toString(), "cmp-supabase-auth-compose", version.toString())
 
     pom {
         name = "KMP Supabase Auth — Compose"

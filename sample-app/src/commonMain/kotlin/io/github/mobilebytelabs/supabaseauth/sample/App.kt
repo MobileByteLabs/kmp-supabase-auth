@@ -32,9 +32,9 @@ import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
  * out the client id and watch what the library decides — that is the real contract, not a
  * decorative demo.
  *
- * The sign-in screen lands here once `auth-compose` is implemented. It matters that it lands
- * HERE: native Credential Manager and ASAuthorization cannot be exercised by any CI job, so a
- * runnable sample on a physical device is the only honest verification of those paths.
+ * The sign-in screen lands here once `cmp-supabase-auth-compose` is implemented, and it matters
+ * that it lands HERE: native Credential Manager and ASAuthorization cannot be exercised by any CI
+ * job, so a runnable sample on a physical device is the only honest verification of those paths.
  */
 @Composable
 fun App() {

@@ -17,6 +17,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kmp-supabase-auth"
-include(":auth-core") // headless — client, Store5 session store, repository, Koin DI
-include(":auth-compose") // Compose UI — provider buttons, login screen, ViewModel
+include(":cmp-supabase-auth") // headless — client, Store5 session store, repository, Koin DI
+include(":cmp-supabase-auth-compose") // Compose UI — provider buttons, login screen, ViewModel
 include(":sample-app")

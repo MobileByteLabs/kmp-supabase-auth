@@ -1,24 +1,24 @@
-# auth-compose
+# cmp-supabase-auth-compose
 
 > **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
 > which KMP targets every module ships and why.
 
 Compose Multiplatform UI for **KMP Supabase Auth** — native sign-in wrappers, brand-compliant
 provider buttons, a slot-based login screen and a session-driven ViewModel. Depends on
-[auth-core](../auth-core/README.md), which owns everything headless.
+[cmp-supabase-auth](../cmp-supabase-auth/README.md), which owns everything headless.
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
 ## Install
 
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:auth-compose:0.1.0")
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")
 }
 ```
 
-`auth-core` comes transitively — it is an `api` dependency, because the login screen takes
+`cmp-supabase-auth` comes transitively — it is an `api` dependency, because the login screen takes
 `AuthRepository` and `SupabaseAuthClient` from it.
 
 ## Koin module
@@ -26,7 +26,7 @@ dependencies {
 ```kotlin
 val AppModule = module {
     includes(
-        supabaseAuth(config),        // auth-core: client + store + repository
+        supabaseAuth(config),        // cmp-supabase-auth: client + store + repository
         supabaseAuthComposeModule(), // this module: the ViewModel
     )
 }
@@ -80,10 +80,10 @@ the exact phrase "Sign in with Apple" — and a bespoke mark risks store review.
 ## macOS has no native Apple sign-in
 
 `compose-auth` publishes **no macOS artifact at all**, so this module cannot reach macOS. macOS
-consumers take `auth-core` plus the web-OAuth fallback. See
+consumers take `cmp-supabase-auth` plus the web-OAuth fallback. See
 [docs/SETUP_APPLE.md](../docs/SETUP_APPLE.md).
 
-`auth-core` reaches `iosX64` and this module does not — Compose Multiplatform publishes no
+`cmp-supabase-auth` reaches `iosX64` and this module does not — Compose Multiplatform publishes no
 `iosX64` artifact. Both losses are measured; see [TARGET_MATRIX.md](../TARGET_MATRIX.md).
 
 ## Status
@@ -93,6 +93,6 @@ committed design, not yet the shipped code. See [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## Related
 
-- [auth-core](../auth-core/README.md) — headless half
+- [cmp-supabase-auth](../cmp-supabase-auth/README.md) — headless half
 - [TARGET_MATRIX.md](../TARGET_MATRIX.md) — measured target policy
 - [DEVELOPMENT.md](DEVELOPMENT.md) — contributor docs

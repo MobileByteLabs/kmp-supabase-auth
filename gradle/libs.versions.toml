@@ -16,7 +16,7 @@ binaryCompatibilityValidator = "0.18.1"
 supabase = "3.8.0"
 
 # Store5 5.1.0-beta01 — 8 targets (no macOS / tvOS / watchOS / mingwX64 / linuxArm64).
-# This is what caps auth-core at 8; see README "Target matrix".
+# This is what caps cmp-supabase-auth at 8; see README "Target matrix".
 store = "5.1.0-beta01"
 
 koin = "4.1.1"

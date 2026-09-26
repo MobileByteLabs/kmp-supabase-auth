@@ -20,9 +20,9 @@ jobs:
   pr-check:
     uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.9.1
     with:
-      # This repo publishes auth-core + auth-compose. `sample-app` is deliberately outside the
+      # This repo publishes cmp-supabase-auth + cmp-supabase-auth-compose. `sample-app` is outside the
       # pattern — samples are proof, not artifacts, and must never reach Maven Central.
-      module-pattern: 'auth-'
+      module-pattern: 'cmp-'
       java-version: '21'
       java-distribution: 'zulu'
       run-quality: true
@@ -34,7 +34,7 @@ jobs:
   #
   # kmp-toolkit pairs this with assert-observability-wired.sh. That gate is NOT ported here: it
   # presupposes a cmp-observe dependency, whose published jvm artifact is compiled at Java 21
-  # (class file 65). Taking it would force JDK 21 on every desktop consumer of auth-core, which
+  # (class file 65). Taking it would force JDK 21 on every desktop consumer of cmp-supabase-auth, which
   # is too high a price for lifecycle hooks. Revisit if cmp-observe ships a lower-target jvm jar.
   docs-gate:
     name: Docs Gate

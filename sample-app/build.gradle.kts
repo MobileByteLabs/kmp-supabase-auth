@@ -66,7 +66,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
 
             // Include the library
-            implementation(project(":auth-core"))
+            implementation(project(":cmp-supabase-auth"))
         }
 
         jvmMain.dependencies {

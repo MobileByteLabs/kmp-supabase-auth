@@ -7,8 +7,8 @@ an id-preserving upgrade, and a web-OAuth fallback everywhere else.
 Wire it into an app with **one Koin line**. Or three, one per architectural layer — they are the
 same thing, and a test proves it.
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
-[![Compose Multiplatform](https://img.shields.io/badge/Compose-1.11.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose-1.12.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
 > **Pre-1.0 and under construction.** The build, CI, publishing and quality stack are complete and
@@ -31,8 +31,8 @@ that every app can depend on.
 
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:auth-core:0.1.0")     // headless
-    implementation("io.github.mobilebytelabs:auth-compose:0.1.0")  // Compose UI (optional)
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")     // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI (optional)
 }
 ```
 
@@ -69,8 +69,8 @@ Console setup is the part that actually costs time:
 
 | Module | Targets | What it owns |
 |---|---|---|
-| **[auth-core](auth-core/README.md)** | 8 | Config, Supabase client boundary, Store5 session store, repository, Koin DI |
-| **[auth-compose](auth-compose/README.md)** | 6 | `remember*` sign-in wrappers, provider buttons, login screen, ViewModel |
+| **[cmp-supabase-auth](cmp-supabase-auth/README.md)** | 8 | Config, Supabase client boundary, Store5 session store, repository, Koin DI |
+| **[cmp-supabase-auth-compose](cmp-supabase-auth-compose/README.md)** | 6 | `remember*` sign-in wrappers, provider buttons, login screen, ViewModel |
 | `sample-app` | — | Runnable proof. Not published |
 
 Target counts are **measured** against Maven Central, not inferred — see
@@ -136,7 +136,7 @@ in on a second device gets a different id. Cross-device guest merge is out of sc
 | Anonymous | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **macOS gets no native Apple sign-in** — `compose-auth` publishes no macOS artifact at all, so
-`auth-compose` cannot reach macOS. Measured, not an oversight.
+`cmp-supabase-auth-compose` cannot reach macOS. Measured, not an oversight.
 
 ## Development
 
@@ -180,7 +180,7 @@ JDK 21 on every desktop consumer of this library.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Each module's `DEVELOPMENT.md`
-([auth-core](auth-core/DEVELOPMENT.md) · [auth-compose](auth-compose/DEVELOPMENT.md)) carries the
+([cmp-supabase-auth](cmp-supabase-auth/DEVELOPMENT.md) · [cmp-supabase-auth-compose](cmp-supabase-auth-compose/DEVELOPMENT.md)) carries the
 per-module contributor docs, and CI enforces their structure.
 
 ## License
