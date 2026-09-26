@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KMP Supabase Auth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <meta name="description"
+        content="Supabase authentication for Kotlin Multiplatform — native Google and Apple sign-in, anonymous sessions, and one-line Koin wiring.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    :root {
+      --theme-color: #3ecf8e; /* Supabase green */
+      --sidebar-width: 17rem;
+    }
+    .app-name-link img { max-width: 70%; }
+    .markdown-section code { border-radius: 3px; }
+    .markdown-section table { display: table; width: 100%; }
+    /* Callouts used across the setup guides */
+    .markdown-section blockquote { border-left: 4px solid var(--theme-color); background: #f6fbf9; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #12161c; color: #c9d1d9; }
+      .sidebar, .sidebar-toggle { background: #12161c; }
+      .markdown-section blockquote { background: #16211d; }
+      .markdown-section h1, .markdown-section h2,
+      .markdown-section h3, .markdown-section strong { color: #e6edf3; }
+      .markdown-section table td, .markdown-section table th { border-color: #30363d; }
+      .markdown-section tr { background: #12161c; border-top-color: #30363d; }
+      .markdown-section pre, .markdown-section code { background: #1b2028; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Loading…</div>
+  <script>
+    window.$docsify = {
+      name: 'KMP Supabase Auth',
+      repo: 'MobileByteLabs/kmp-supabase-auth',
+      loadSidebar: true,
+      loadNavbar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      relativePath: true,
+      maxLevel: 4,
+      search: {
+        depth: 4,
+        placeholder: 'Search the docs…',
+        noData: 'No results.',
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        successText: 'Copied',
+      },
+      pagination: {
+        crossChapter: true,
+        crossChapterText: true,
+      },
+      // The repo root README is the landing page, so the docs site and GitHub never drift.
+      homepage: 'README.md',
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-kotlin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-gradle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml-doc.min.js"></script>
+</body>
+</html>

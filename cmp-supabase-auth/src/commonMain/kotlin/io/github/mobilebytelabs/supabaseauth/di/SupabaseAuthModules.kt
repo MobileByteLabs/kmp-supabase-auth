@@ -12,6 +12,7 @@ import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
 import io.github.mobilebytelabs.supabaseauth.buildOptions
 import io.github.mobilebytelabs.supabaseauth.internal.SupabaseAuthClientImpl
 import io.github.mobilebytelabs.supabaseauth.internal.buildAuthExtras
+import io.github.mobilebytelabs.supabaseauth.registerAuthCallbackClient
 import org.koin.core.module.Module
 import org.koin.core.scope.Scope
 import org.koin.dsl.module
@@ -66,8 +67,12 @@ public fun supabaseAuthNetwork(
 ): Module = module {
     single { buildOptions(configure) }
     single<SupabaseAuthClient> {
+        val supabase = clientProvider(this)
+        // Arm the platform OAuth-redirect receiver before anything can navigate away. On
+        // Android that is the library's own callback activity; elsewhere it is a no-op.
+        registerAuthCallbackClient(supabase)
         SupabaseAuthClientImpl(
-            client = clientProvider(this),
+            client = supabase,
             options = get(),
             isConfigured = config.isConfigured,
         )

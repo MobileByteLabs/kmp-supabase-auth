@@ -22,14 +22,16 @@ import io.github.jan.supabase.auth.handleDeeplinks
  * Shipping a translucent, no-UI activity here means the consuming app gets a working callback by
  * manifest merge, with no launcher-activity surgery and nothing to forget.
  *
- * ## Wiring
+ * ## Visibility
  *
- * The client must be resolvable when the redirect lands. Set [client] during DI graph
- * construction — `supabaseAuthNetwork(...)` does this for you on Android.
+ * `internal`, because this library's public API is entirely commonMain — an Android-only public
+ * class would break that. Kotlin `internal` still compiles to a JVM-public class, so the OS can
+ * instantiate it from the merged manifest; it is simply not part of the published API surface.
+ * The client is armed from commonMain via `registerAuthCallbackClient`.
  *
  * Not used by native Google on Android: Credential Manager never leaves the app.
  */
-public class SupabaseAuthCallbackActivity : Activity() {
+internal class SupabaseAuthCallbackActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,7 +53,7 @@ public class SupabaseAuthCallbackActivity : Activity() {
         runCatching { supabase.handleDeeplinks(intent) }
     }
 
-    public companion object {
+    internal companion object {
         /**
          * The client the redirect is delivered to.
          *
@@ -59,6 +61,6 @@ public class SupabaseAuthCallbackActivity : Activity() {
          * return from the browser, with no scope to inject from. Set once at graph construction.
          */
         @JvmStatic
-        public var client: SupabaseClient? = null
+        var client: SupabaseClient? = null
     }
 }

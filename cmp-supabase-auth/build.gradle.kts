@@ -124,6 +124,13 @@ kotlin {
     }
 
     sourceSets {
+        // Every non-Android target shares one no-op `registerAuthCallbackClient` actual. Android
+        // is the only platform needing a real OAuth-redirect receiver; declaring the rest one by
+        // one would be eleven identical files.
+        val noCallbackMain = create("noCallbackMain").apply { dependsOn(getByName("commonMain")) }
+        listOf("jvmMain", "appleMain", "linuxMain", "mingwMain", "jsMain", "wasmJsMain")
+            .forEach { getByName(it).dependsOn(noCallbackMain) }
+
         commonMain.dependencies {
             // `api`, not `implementation`: SupabaseAuthClient exposes a ComposeAuth handle and
             // SessionStatus, so consumers must see those types. That leak is deliberate — native

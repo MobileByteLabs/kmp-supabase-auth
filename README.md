@@ -160,7 +160,7 @@ Requires JDK 17+. CI runs 21.
 | `native-tests.yml` | Kotlin/Native test execution, nightly / opt-in |
 | `development-md-coherence.yml` | `DEVELOPMENT.md` structure per module |
 | `publish.yml` / `publish-trigger.yml` | Maven Central publishing |
-| `docs-publish.yml` / `sync-docs-to-wiki.yml` | mkdocs site + wiki |
+| `docs-publish.yml` / `sync-docs-to-wiki.yml` | docsify site + wiki |
 
 The quality stack — Kover, Detekt, Spotless, BCV, the docs gate, native tests — is ported from
 [KmpToolkit](https://github.com/MobileByteLabs/KmpToolkit). Its observability gate is deliberately

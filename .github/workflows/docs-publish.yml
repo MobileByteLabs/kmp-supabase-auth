@@ -1,8 +1,12 @@
-name: Publish docs (mkdocs → GitHub Pages)
+name: Publish docs (docsify → GitHub Pages)
 
-# Delegates to the reusable workflow in mbl-actionhub. The mkdocs build
-# + Pages deploy logic lives there as a single source of truth across
-# every MobileByteLabs KMP library that publishes documentation.
+# docsify renders Markdown in the BROWSER — there is no site generator to run, so this workflow
+# only has to assemble the files docsify will fetch and hand them to Pages.
+#
+# The assembly step exists because the docs deliberately reuse the repo's real Markdown (README,
+# TARGET_MATRIX, each module's README/DEVELOPMENT) rather than keeping a second, drifting copy
+# under docs/. Those files live outside docs/, so they are staged into the site root here.
+#
 # Repo Pages source must be set to "GitHub Actions" (build_type=workflow).
 
 on:
@@ -10,7 +14,11 @@ on:
     branches: [development]
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'README.md'
+      - 'TARGET_MATRIX.md'
+      - 'CONTRIBUTING.md'
+      - 'cmp-*/README.md'
+      - 'cmp-*/DEVELOPMENT.md'
       - '.github/workflows/docs-publish.yml'
   workflow_dispatch:
 
@@ -19,6 +27,62 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
-  publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/docs-publish-mkdocs.yml@v1.9.1
+  build:
+    name: Assemble docsify site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stage site
+        run: |
+          set -euo pipefail
+          # The site is an exact MIRROR of the repo's doc layout. That is deliberate: the docs
+          # reuse the repo's real Markdown, and mirroring means every relative link those files
+          # already contain resolves unchanged. Flattening everything to the site root was tried
+          # and produced 14 broken links, because `../TARGET_MATRIX.md` escapes the root.
+          mkdir -p _site/docs
+          # docsify's entry point + conventions belong at the SITE ROOT, not under docs/.
+          cp docs/index.html docs/_sidebar.md docs/_navbar.md _site/
+          # Authored pages keep their docs/ path.
+          for f in docs/*.md; do
+            case "$(basename "$f")" in _sidebar.md|_navbar.md) continue ;; esac
+            cp "$f" _site/docs/
+          done
+          # Root-level docs, at their repo paths.
+          cp README.md TARGET_MATRIX.md CONTRIBUTING.md _site/
+          [ -f LICENSE ] && cp LICENSE _site/
+          [ -f CODE_OF_CONDUCT.md ] && cp CODE_OF_CONDUCT.md _site/
+          # Per-module docs, at their repo paths.
+          for m in cmp-*/; do
+            [ -f "$m/README.md" ] || continue
+            mkdir -p "_site/$m"
+            cp "$m/README.md" "_site/$m/"
+            [ -f "$m/DEVELOPMENT.md" ] && cp "$m/DEVELOPMENT.md" "_site/$m/"
+          done
+          # Required, or Pages' Jekyll step eats files beginning with an underscore — which is
+          # every docsify convention file.
+          touch _site/.nojekyll
+
+      - name: Verify every relative link in the assembled site resolves
+        run: python3 .github/scripts/assert-docs-links.py _site
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
