@@ -14,14 +14,13 @@ ships against it. When the two disagree, the upstream page wins and this file is
 
 ## 1. This library's modules
 
-| Module | Targets | Dropped | Why |
-|---|---|---|---|
-| `cmp-supabase-auth` | **8** | macOS ×2, tvOS ×3, watchOS ×4, `mingwX64`, `linuxArm64`, `wasmWasi` | `store5` 5.1.0-beta01 publishes none of them |
-| `cmp-supabase-auth-compose` | **6** | the above, plus `iosX64` and `macosArm64` | `compose-auth` publishes **no macOS artifact**; Compose Multiplatform itself publishes no `iosX64` |
+<!-- docs-gen:targets:begin -->
+| Module | Count | Targets |
+|---|---|---|
+| `cmp-supabase-auth` | **17** | `android` `iosArm64` `iosSimulatorArm64` `iosX64` `js` `jvm` `linuxX64` `macosArm64` `macosX64` `mingwX64` `tvosArm64` `tvosSimulatorArm64` `tvosX64` `wasmJs` `watchosArm64` `watchosSimulatorArm64` `watchosX64`  |
+| `cmp-supabase-auth-compose` | **6** | `android` `iosArm64` `iosSimulatorArm64` `js` `jvm` `wasmJs`  |
+<!-- docs-gen:targets:end -->
 
-`cmp-supabase-auth` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64` `iosX64` `linuxX64`
-
-`cmp-supabase-auth-compose` ships: `android` `jvm` `js` `wasmJs` `iosArm64` `iosSimulatorArm64`
 
 `sample-app` is not published and is excluded from `module-pattern: 'cmp-'` in CI.
 
@@ -34,12 +33,15 @@ ships against it. When the two disagree, the upstream page wins and this file is
 | `auth-kt` | 3.8.0 | 17 | `linuxArm64` `watchosArm32` `watchosDeviceArm64` `wasmWasi` |
 | `compose-auth` | 3.8.0 | 7 | **all macOS** |
 | `compose-auth-ui` | 3.8.0 | 7 | **all macOS** |
-| `store5` | 5.1.0-beta01 | 8 | macOS ×2, tvOS ×3, watchOS ×4, `mingwX64`, `linuxArm64`, `wasmWasi` |
 | Compose Multiplatform | 1.12.0 | 7 | **`iosX64`**, `macosX64` |
 
-**`store5` is the binding constraint on `cmp-supabase-auth`.** It is also currently a *beta*. Both facts
-argue for keeping the session store behind an interface, which it is — swapping to a plain
-`StateFlow` holder is a one-file change.
+**`auth-kt` is the binding constraint on `cmp-supabase-auth`** — it publishes 17 of the 21 targets
+this family considers reachable, missing `linuxArm64`, `watchosArm32`, `watchosDeviceArm64` and
+`wasmWasi`. Koin publishes every remaining target and adds no constraint.
+
+**Store5 was removed.** It had capped this module at 8 targets, and it was redundant: `auth-kt`
+already owns session lifecycle, persistence and refresh, so a second cache layer would have been
+a second owner of the same state. See `AuthSessionStore`'s KDoc.
 
 ---
 
@@ -63,19 +65,19 @@ intermediate source set does not work; that is why the library ships as a headle
 the rest of the module still ships everywhere.
 
 That rule does **not** apply when the dependency *is* the module's reason to exist, which is the
-case for `store5` and `auth-kt` in `cmp-supabase-auth`: there is no meaningful `cmp-supabase-auth` without a session
-store and a GoTrue client, so a target that cannot resolve them has nothing to receive.
+case for `auth-kt` in `cmp-supabase-auth`: there is no meaningful auth module without a GoTrue
+client, so a target that cannot resolve one has nothing to receive.
 
 ---
 
 ## 5. Re-measuring
 
 ```bash
-V=5.1.0-beta01
-for a in store5-macosarm64 store5-mingwx64 store5-tvosarm64 store5-linuxx64; do
+V=3.8.0
+for a in auth-kt-linuxarm64 auth-kt-watchosarm32 auth-kt-watchosdevicearm64 auth-kt-macosarm64; do
   printf '%s -> %s\n' "$a" \
     "$(curl -s -o /dev/null -w '%{http_code}' \
-        "https://repo1.maven.org/maven2/org/mobilenativefoundation/store/$a/$V/$a-$V.pom")"
+        "https://repo1.maven.org/maven2/io/github/jan-tennert/supabase/$a/$V/$a-$V.pom")"
 done
 ```
 

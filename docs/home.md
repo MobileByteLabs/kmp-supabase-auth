@@ -7,12 +7,14 @@ an id-preserving upgrade, and a web-OAuth fallback everywhere else.
 The public API is **entirely commonMain**. No consumer writes a platform-conditional import to
 make sign-in work.
 
+<!-- docs-gen:install:begin -->
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")  // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI (optional)
 }
 ```
+<!-- docs-gen:install:end -->
 
 ```kotlin
 val AppModule = module {

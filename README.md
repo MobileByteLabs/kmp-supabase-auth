@@ -11,9 +11,9 @@ same thing, and a test proves it.
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-1.12.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
-> **Pre-1.0 and under construction.** The build, CI, publishing and quality stack are complete and
-> green. The auth implementation is partially landed — see [Status](#status). The API below is the
-> committed design; treat it as a contract, not as shipped code.
+> **Pre-1.0.** The API is implemented, tested and green across every declared target. It is not
+> yet published to Maven Central, and native Google/Apple sign-in has not been verified on a
+> physical device — see [Status](#status).
 
 ---
 
@@ -29,12 +29,14 @@ that every app can depend on.
 
 ## Install
 
+<!-- docs-gen:install:begin -->
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")     // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")  // headless
     implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI (optional)
 }
 ```
+<!-- docs-gen:install:end -->
 
 ## Quick start
 
@@ -67,11 +69,13 @@ Console setup is the part that actually costs time:
 
 ## Modules
 
-| Module | Targets | What it owns |
+<!-- docs-gen:modules:begin -->
+| Module | Artifact | Targets |
 |---|---|---|
-| **[cmp-supabase-auth](cmp-supabase-auth/README.md)** | 8 | Config, Supabase client boundary, Store5 session store, repository, Koin DI |
-| **[cmp-supabase-auth-compose](cmp-supabase-auth-compose/README.md)** | 6 | `remember*` sign-in wrappers, provider buttons, login screen, ViewModel |
-| `sample-app` | — | Runnable proof. Not published |
+| [`cmp-supabase-auth`](cmp-supabase-auth/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth:0.1.0` | 17 |
+| [`cmp-supabase-auth-compose`](cmp-supabase-auth-compose/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0` | 6 |
+| `sample-app` | — (not published) | — |
+<!-- docs-gen:modules:end -->
 
 Target counts are **measured** against Maven Central, not inferred — see
 **[TARGET_MATRIX.md](TARGET_MATRIX.md)**.
@@ -151,6 +155,15 @@ in on a second device gets a different id. Cross-device guest merge is out of sc
 
 Requires JDK 17+. CI runs 21.
 
+<!-- docs-gen:deps:begin -->
+| Dependency | Version |
+|---|---|
+| supabase-kt (`auth-kt`, `compose-auth`, `compose-auth-ui`) | `3.8.0` |
+| Koin | `4.1.1` |
+| Kotlin | `2.4.20` |
+| Compose Multiplatform | `1.12.0` |
+<!-- docs-gen:deps:end -->
+
 ### CI
 
 | Workflow | Runs |
@@ -160,7 +173,8 @@ Requires JDK 17+. CI runs 21.
 | `native-tests.yml` | Kotlin/Native test execution, nightly / opt-in |
 | `development-md-coherence.yml` | `DEVELOPMENT.md` structure per module |
 | `publish.yml` / `publish-trigger.yml` | Maven Central publishing |
-| `docs-publish.yml` / `sync-docs-to-wiki.yml` | docsify site + wiki |
+| `docs-refresh.yml` | regenerates derived docs on merge, then deploys |
+| `docs-publish.yml` / `sync-docs-to-wiki.yml` | docsify site → Cloudflare Pages + wiki |
 
 The quality stack — Kover, Detekt, Spotless, BCV, the docs gate, native tests — is ported from
 [KmpToolkit](https://github.com/MobileByteLabs/KmpToolkit). Its observability gate is deliberately
@@ -172,10 +186,12 @@ JDK 21 on every desktop consumer of this library.
 | Area | State |
 |---|---|
 | Build, CI, publishing, quality gates | ✅ complete |
-| `SupabaseAuthConfig`, `SupabaseAuth.validate` | ✅ landed, tested |
-| Client, session store, repository, Koin modules | 🚧 designed, not yet implemented |
-| Compose UI — buttons, login screen, ViewModel | 🚧 designed, not yet implemented |
+| Config, client, session store, repository, Koin DI | ✅ implemented, tested |
+| Compose UI — buttons, login screen, ViewModel | ✅ implemented, tested |
+| Public API entirely commonMain | ✅ enforced by BCV |
 | Setup documentation | ✅ complete |
+| Published to Maven Central | ⬜ not yet |
+| Native sign-in verified on a physical device | ⬜ not yet — CI cannot exercise it |
 
 ## Contributing
 

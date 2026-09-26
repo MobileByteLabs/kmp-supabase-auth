@@ -9,6 +9,27 @@ without a regenerated baseline fails CI.
 ./gradlew apiCheck  # what CI runs
 ```
 
+<!-- docs-gen:api:begin -->
+**`cmp-supabase-auth`**
+
+- `AuthError`
+- `AuthProvider`
+- `AuthRepository`
+- `AuthSessionStore`
+- `AuthUser`
+- `FakeAuthRepository`
+- `SupabaseAuth`
+- `SupabaseAuthClient`
+- `SupabaseAuthConfig`
+- `SupabaseAuthOptions`
+
+**`cmp-supabase-auth-compose`**
+
+- `SignInLauncher`
+- `SupabaseAuthUiState`
+- `SupabaseAuthViewModel`
+<!-- docs-gen:api:end -->
+
 ## cmp-supabase-auth
 
 ### Configuration

@@ -4,7 +4,7 @@
 > which KMP targets every module ships and why.
 
 Headless half of **KMP Supabase Auth**. Configuration, the Supabase client boundary, a
-Store5-backed session store, the repository, and the Koin wiring. No Compose — the UI lives in
+session store, the repository, and the Koin wiring. No Compose — the UI lives in
 [cmp-supabase-auth-compose](../cmp-supabase-auth-compose/README.md).
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
@@ -17,6 +17,28 @@ dependencies {
     implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")
 }
 ```
+
+<!-- docs-gen:targets:begin -->
+This module ships **17 targets**:
+
+- `android`
+- `iosArm64`
+- `iosSimulatorArm64`
+- `iosX64`
+- `js`
+- `jvm`
+- `linuxX64`
+- `macosArm64`
+- `macosX64`
+- `mingwX64`
+- `tvosArm64`
+- `tvosSimulatorArm64`
+- `tvosX64`
+- `wasmJs`
+- `watchosArm64`
+- `watchosSimulatorArm64`
+- `watchosX64`
+<!-- docs-gen:targets:end -->
 
 ## The one rule that matters
 
@@ -108,18 +130,23 @@ no profile type, so there is never a second owner of state you already own.
 
 ## Session store
 
-Backed by Store5, and deliberately **memory-only** with `Fetcher.ofFlow`:
+A plain `StateFlow` holder, deliberately **not** a Store5 store:
 
-- Not disk-cached — GoTrue already persists and refreshes the session. Re-caching it here would
+- **Memory only.** GoTrue already persists and refreshes the session. Caching it again here would
   let the app show a signed-in user after the real token had expired.
-- Not enrolled in the logout purge — this store is what *tells* the app a logout happened.
-  Purging it would clear the very stream the app reads to notice the purge.
+- **Not enrolled in the logout purge.** This store is what *tells* the app a logout happened;
+  purging it would clear the very stream the app reads to notice the purge.
+- **Push, not fetch.** GoTrue emits session changes, so there is no fetcher to write. Adding one
+  creates a second read path for one piece of state.
+
+Store5 was tried and removed — it capped this module at 8 targets and duplicated lifecycle
+`auth-kt` already owns.
 
 ## Status
 
-Pre-1.0 and incomplete: `SupabaseAuthConfig` and `SupabaseAuth` have landed; the client, session
-store, repository and DI modules described above are the committed design, not yet the shipped
-code. See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
+Pre-1.0 and implemented: the API below is shipped, tested and green on every declared target.
+Not yet published to Maven Central, and native sign-in is unverified on a physical device.
+See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
 
 ## Related
 

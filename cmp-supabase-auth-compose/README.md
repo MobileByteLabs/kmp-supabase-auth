@@ -18,6 +18,17 @@ dependencies {
 }
 ```
 
+<!-- docs-gen:targets:begin -->
+This module ships **6 targets**:
+
+- `android`
+- `iosArm64`
+- `iosSimulatorArm64`
+- `js`
+- `jvm`
+- `wasmJs`
+<!-- docs-gen:targets:end -->
+
 `cmp-supabase-auth` comes transitively — it is an `api` dependency, because the login screen takes
 `AuthRepository` and `SupabaseAuthClient` from it.
 
@@ -88,8 +99,9 @@ consumers take `cmp-supabase-auth` plus the web-OAuth fallback. See
 
 ## Status
 
-Pre-1.0. The module builds, publishes and carries a BCV baseline; the UI described above is the
-committed design, not yet the shipped code. See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
+Pre-1.0 and implemented: the API below is shipped, tested and green on every declared target.
+Not yet published to Maven Central, and native sign-in is unverified on a physical device.
+See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
 
 ## Related
 

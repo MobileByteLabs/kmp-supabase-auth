@@ -41,6 +41,9 @@ on:
       - '.github/workflows/docs-publish.yml'
       - '.github/scripts/assert-docs-links.py'
   workflow_dispatch:
+  # Invoked by docs-refresh.yml AFTER it lands regenerated content, so the site serves the
+  # refreshed docs rather than the commit that preceded them.
+  workflow_call:
 
 concurrency:
   group: docs-publish-${{ github.ref }}

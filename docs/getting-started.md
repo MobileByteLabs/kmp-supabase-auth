@@ -2,12 +2,14 @@
 
 ## 1. Add the dependencies
 
+<!-- docs-gen:install:begin -->
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")          // headless
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")  // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI (optional)
 }
 ```
+<!-- docs-gen:install:end -->
 
 The Compose module brings the headless one transitively (`api`), so a UI app can take just it.
 

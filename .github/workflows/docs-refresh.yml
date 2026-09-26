@@ -1,0 +1,148 @@
+name: Docs · refresh from build
+run-name: "📚 Docs refresh · ${{ github.event.pull_request.title || github.ref_name }}"
+
+# Keeps the DERIVED half of the docs in step with the build.
+#
+# Three facts are already stated authoritatively by the build — the library VERSION, each
+# module's TARGET SET, and its PUBLIC API — and restating them in prose is how this repo's README
+# came to claim 8 targets and a Store5 dependency weeks after both had changed, with CI green the
+# whole time. Nothing was checking, because nothing could. Now `scripts/docs/refresh.sh`
+# regenerates them between markers and this workflow runs it.
+#
+# TWO MODES, because the right response differs:
+#
+#   pull_request  →  CHECK ONLY. Fails with the exact drift and the one command that fixes it.
+#                    It must not push to a contributor's branch: a fork PR has no write token,
+#                    and rewriting someone's branch mid-review is hostile.
+#
+#   push to development
+#                 →  REFRESH, land it on the default branch, then deploy. `development` is not
+#                    protected here, so the refresh lands directly rather than opening a PR
+#                    nobody would review — the content is machine-generated and byte-identical
+#                    to what the gate demands. If branch protection is added later, switch this
+#                    to peter-evans/create-pull-request the way kmp-project-template's
+#                    docs-refresh.yml does.
+#
+# WHY IT NEEDS NOTHING INSTALLED
+# The generator is pure bash + python3, reading build files and the committed BCV baselines. No
+# JDK, no Gradle, no network — so this job takes seconds and cannot be broken by a toolchain bump.
+
+on:
+  pull_request:
+    paths:
+      - 'cmp-*/build.gradle.kts'
+      - 'cmp-*/api/**'
+      - 'gradle.properties'
+      - 'gradle/libs.versions.toml'
+      - 'settings.gradle.kts'
+      - 'scripts/docs/**'
+      - 'README.md'
+      - 'TARGET_MATRIX.md'
+      - 'docs/**'
+      - '.github/workflows/docs-refresh.yml'
+  push:
+    branches: [development]
+    paths:
+      - 'cmp-*/build.gradle.kts'
+      - 'cmp-*/api/**'
+      - 'gradle.properties'
+      - 'gradle/libs.versions.toml'
+      - 'settings.gradle.kts'
+      - 'scripts/docs/**'
+  workflow_dispatch:
+
+concurrency:
+  group: docs-refresh-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Docs are current with the build
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify generated docs match the build
+        run: |
+          set -euo pipefail
+          chmod +x scripts/docs/*.sh
+          if ! bash scripts/docs/refresh.sh --check; then
+            {
+              echo "### 📚 Docs are out of step with the build"
+              echo
+              echo "This PR changes module targets, the version, the public API or the version"
+              echo "catalog without refreshing the derived documentation. Those blocks are"
+              echo "generated from build files, so they cannot be corrected by hand."
+              echo
+              echo '```bash'
+              echo 'bash scripts/docs/refresh.sh'
+              echo '```'
+              echo
+              echo "Prose outside the \`<!-- docs-gen:* -->\` markers is never touched."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "✅ generated docs match the build" >> "$GITHUB_STEP_SUMMARY"
+
+  refresh:
+    name: Refresh and land
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.drift.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Regenerate derived docs
+        run: |
+          set -euo pipefail
+          chmod +x scripts/docs/*.sh
+          bash scripts/docs/refresh.sh
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if [[ -n "$(git status --porcelain -- README.md TARGET_MATRIX.md docs cmp-*/README.md)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "### 📚 Docs refreshed"
+              echo
+              echo '```'
+              git status --short -- README.md TARGET_MATRIX.md docs 'cmp-*/README.md'
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "✅ already in step — nothing to land" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # `[skip ci]` matters: without it this push re-triggers docs-refresh, which finds no drift
+      # and stops — harmless but noisy, and it burns a run on every merge.
+      - name: Land refreshed docs
+        if: steps.drift.outputs.changed == 'true'
+        env:
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+          git add README.md TARGET_MATRIX.md docs cmp-*/README.md
+          git commit -m "docs: refresh derived blocks from the build [skip ci]"
+          git push
+
+  # Deploy AFTER the refresh, so the published site serves the regenerated content rather than
+  # the pre-refresh commit. docs-publish.yml also fires on its own path filter; this call is what
+  # guarantees ordering when the refresh itself is what changed the docs.
+  deploy:
+    name: Deploy refreshed docs
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    uses: ./.github/workflows/docs-publish.yml
+    secrets: inherit
