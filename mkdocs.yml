@@ -1,8 +1,8 @@
-site_name: TEMPLATE_LIBRARY_NAME
-site_description: TEMPLATE_DESCRIPTION
-site_url: https://TEMPLATE_ORG.github.io/TEMPLATE_REPO/
-repo_url: https://github.com/TEMPLATE_ORG/TEMPLATE_REPO
-repo_name: TEMPLATE_ORG/TEMPLATE_REPO
+site_name: kmp-supabase-auth
+site_description: kmp-supabase-auth - A Kotlin Multiplatform library
+site_url: https://MobileByteLabs.github.io/kmp-supabase-auth/
+repo_url: https://github.com/MobileByteLabs/kmp-supabase-auth
+repo_name: MobileByteLabs/kmp-supabase-auth
 edit_uri: edit/development/docs/
 
 theme:

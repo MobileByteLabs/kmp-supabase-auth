@@ -11,7 +11,7 @@ plugins {
 
 kotlin {
     androidLibrary {
-        namespace = "io.github.template.sample"
+        namespace = "io.github.mobilebytelabs.supabaseauth.sample"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -77,11 +77,11 @@ kotlin {
 
 compose.desktop {
     application {
-        mainClass = "io.github.template.sample.MainKt"
+        mainClass = "io.github.mobilebytelabs.supabaseauth.sample.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.github.template.sample"
+            packageName = "io.github.mobilebytelabs.supabaseauth.sample"
             packageVersion = "1.0.0"
         }
     }

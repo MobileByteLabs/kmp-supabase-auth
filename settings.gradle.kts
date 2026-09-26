@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "template-library"
+rootProject.name = "kmp-supabase-auth"
 include(":cmp-library")
 include(":sample-app")

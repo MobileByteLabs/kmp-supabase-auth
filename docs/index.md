@@ -1,9 +1,9 @@
 ---
-title: TEMPLATE_LIBRARY_NAME
+title: kmp-supabase-auth
 description: TEMPLATE_DESCRIPTION
 ---
 
-# TEMPLATE_LIBRARY_NAME
+# kmp-supabase-auth
 
 > TEMPLATE_DESCRIPTION
 

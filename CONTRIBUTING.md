@@ -1,4 +1,4 @@
-# Contributing to TEMPLATE_LIBRARY_NAME
+# Contributing to kmp-supabase-auth
 
 Thank you for your interest in contributing! This document provides guidelines and instructions for contributing.
 
@@ -19,8 +19,8 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/TEMPLATE_REPO.git
-cd TEMPLATE_REPO
+git clone https://github.com/YOUR_USERNAME/kmp-supabase-auth.git
+cd kmp-supabase-auth
 
 # Set up git hooks
 bash scripts/setup-hooks.sh
