@@ -1,0 +1,29 @@
+public final class io/github/mobilebytelabs/supabaseauth/SupabaseAuth {
+	public static final field INSTANCE Lio/github/mobilebytelabs/supabaseauth/SupabaseAuth;
+	public final fun validate (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;)Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;
+}
+
+public final class io/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAppleServiceId ()Ljava/lang/String;
+	public final fun getGoogleIosClientId ()Ljava/lang/String;
+	public final fun getGoogleWebClientId ()Ljava/lang/String;
+	public final fun getHasGoogleNative ()Z
+	public final fun getOauthHost ()Ljava/lang/String;
+	public final fun getOauthScheme ()Ljava/lang/String;
+	public final fun getProjectRef ()Ljava/lang/String;
+	public final fun getRedirectUrl ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun isConfigured ()Z
+	public fun toString ()Ljava/lang/String;
+}
+

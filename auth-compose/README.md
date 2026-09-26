@@ -1,0 +1,98 @@
+# auth-compose
+
+> **Target support:** see [TARGET_MATRIX.md](../TARGET_MATRIX.md) — the single source of truth for
+> which KMP targets every module ships and why.
+
+Compose Multiplatform UI for **KMP Supabase Auth** — native sign-in wrappers, brand-compliant
+provider buttons, a slot-based login screen and a session-driven ViewModel. Depends on
+[auth-core](../auth-core/README.md), which owns everything headless.
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](https://www.apache.org/licenses/LICENSE-2.0)
+
+## Install
+
+```kotlin
+dependencies {
+    implementation("io.github.mobilebytelabs:auth-compose:0.1.0")
+}
+```
+
+`auth-core` comes transitively — it is an `api` dependency, because the login screen takes
+`AuthRepository` and `SupabaseAuthClient` from it.
+
+## Koin module
+
+```kotlin
+val AppModule = module {
+    includes(
+        supabaseAuth(config),        // auth-core: client + store + repository
+        supabaseAuthComposeModule(), // this module: the ViewModel
+    )
+}
+```
+
+`supabaseAuthComposeModule()` binds `SupabaseAuthViewModel` as a **factory**, not a single: each
+login screen gets its own, so a sign-in attempt abandoned on one screen cannot leave stale
+loading or error state visible on the next.
+
+## Usage
+
+```kotlin
+SupabaseLoginScreen(
+    viewModel = koinViewModel(),
+    client = koinInject(),
+    header = { YourLogo() },      // slots for branding — no need to fork the screen
+    footer = { TermsAndPrivacy() },
+    showGuestOption = true,
+    onSignedIn = { navigateHome() },
+)
+```
+
+Or compose your own from the parts:
+
+```kotlin
+val google = rememberGoogleSignIn(client, onError = viewModel::onSignInFailed)
+GoogleSignInButton(onClick = { viewModel.onSignInStarted(); google.launch() })
+AppleSignInButton(onClick = { /* … */ })
+ContinueAsGuestButton(onClick = viewModel::continueAsGuest)
+```
+
+## Success comes from the session, not the button callback
+
+On Android the native Google `onResult(Success)` callback **frequently never fires** even though
+the ID-token exchange succeeded and the session landed. This was verified on-device: the app sat
+on "Signing in…" while Supabase logged `Authenticated`.
+
+So the ViewModel derives signed-in from `AuthRepository.isSignedIn`, and `onResult` is used only
+for `Error` / `NetworkError` / `ClosedByUser`, which do fire reliably. If you build your own
+screen, do the same — a callback-driven UI hangs on a spinner while the user is already signed in.
+
+`ClosedByUser` is reported as `AuthError.Cancelled` and deliberately does **not** surface as an
+error: a user dismissing the provider sheet has not hit a failure.
+
+## Provider buttons
+
+`GoogleSignInButton` and `AppleSignInButton` render `compose-auth-ui`'s `ProviderButtonContent`
+rather than hand-drawn icons. Apple and Google both publish brand requirements — Apple mandates
+the exact phrase "Sign in with Apple" — and a bespoke mark risks store review.
+
+## macOS has no native Apple sign-in
+
+`compose-auth` publishes **no macOS artifact at all**, so this module cannot reach macOS. macOS
+consumers take `auth-core` plus the web-OAuth fallback. See
+[docs/SETUP_APPLE.md](../docs/SETUP_APPLE.md).
+
+`auth-core` reaches `iosX64` and this module does not — Compose Multiplatform publishes no
+`iosX64` artifact. Both losses are measured; see [TARGET_MATRIX.md](../TARGET_MATRIX.md).
+
+## Status
+
+Pre-1.0. The module builds, publishes and carries a BCV baseline; the UI described above is the
+committed design, not yet the shipped code. See [DEVELOPMENT.md](DEVELOPMENT.md) §6.
+
+## Related
+
+- [auth-core](../auth-core/README.md) — headless half
+- [TARGET_MATRIX.md](../TARGET_MATRIX.md) — measured target policy
+- [DEVELOPMENT.md](DEVELOPMENT.md) — contributor docs

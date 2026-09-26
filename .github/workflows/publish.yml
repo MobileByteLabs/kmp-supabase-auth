@@ -4,7 +4,8 @@
 #   - GitHub release (released or prereleased)
 #   - Manual dispatch: workflow_dispatch (optional specific module, optional version override)
 #
-# TEMPLATE SETUP: before publishing, update group-id and artifact-id below
+# `artifact-id` is the ANCHOR artifact for the Maven-Central-ahead sanity check, not the
+# full publish set — module-pattern above is what decides which modules publish.
 # to match your library's Maven coordinates, then configure these secrets:
 #   MAVEN_CENTRAL_USERNAME, MAVEN_CENTRAL_PASSWORD
 #   SIGNING_KEY_ID, SIGNING_PASSWORD, GPG_KEY_CONTENTS
@@ -31,12 +32,12 @@ permissions:
 
 jobs:
   publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.6.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/publish-kmp-library.yml@v1.9.1
     with:
-      module-pattern: 'cmp-'
+      module-pattern: 'auth-'
       module: ${{ inputs.module || '' }}
-      group-id: 'io.github.mobilebytelabs'        # TEMPLATE: replace with your Maven group ID
-      artifact-id: 'kmp-supabase-auth'       # TEMPLATE: replace with your library artifact ID
+      group-id: 'io.github.mobilebytelabs'
+      artifact-id: 'auth-core'
       version: ${{ inputs.version || '' }}
       verify-against-maven: false           # set true once your library is on Maven Central
       bump-after-release: false

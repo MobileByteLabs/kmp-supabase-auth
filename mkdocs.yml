@@ -1,5 +1,5 @@
 site_name: kmp-supabase-auth
-site_description: kmp-supabase-auth - A Kotlin Multiplatform library
+site_description: Supabase authentication for Kotlin Multiplatform — native Google and Apple sign-in, anonymous sessions, and one-line Koin wiring
 site_url: https://MobileByteLabs.github.io/kmp-supabase-auth/
 repo_url: https://github.com/MobileByteLabs/kmp-supabase-auth
 repo_name: MobileByteLabs/kmp-supabase-auth

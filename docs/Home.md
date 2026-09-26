@@ -1,11 +1,11 @@
 ---
 title: kmp-supabase-auth
-description: TEMPLATE_DESCRIPTION
+description: Supabase authentication for Kotlin Multiplatform — native Google and Apple sign-in, anonymous sessions, and one-line Koin wiring.
 ---
 
 # kmp-supabase-auth
 
-> TEMPLATE_DESCRIPTION
+> Supabase authentication for Kotlin Multiplatform — native Google and Apple sign-in, anonymous sessions, and one-line Koin wiring.
 
 !!! abstract "Welcome to your library's docs site"
     After `customizer.sh` rebrands this template, replace this placeholder

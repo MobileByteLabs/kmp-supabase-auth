@@ -7,6 +7,19 @@ plugins {
     alias(libs.plugins.vanniktech.mavenPublish) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.spotless)
+
+    // `apply false` on both is the CLASSPATH HOOK, not a no-op: it is what makes
+    // `org.jetbrains.dokka` / `org.jetbrains.kotlinx.kover` resolvable from the convention
+    // plugins' own `pluginManager.apply(id)` calls. Remove either and the module that applies
+    // the convention fails with "plugin not found" at configuration time.
+    alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.kover) apply false
+
+    // Applied AT ROOT so coverage aggregates across modules. Each leaf module applying
+    // `…supabaseauth.kover` self-registers into this root aggregation, so adding a module
+    // needs no change here.
+    // Tasks: ./gradlew koverHtmlReport | koverXmlReport | koverVerify
+    id("io.github.mobilebytelabs.supabaseauth.kover")
 }
 
 // Detekt configuration for the entire project

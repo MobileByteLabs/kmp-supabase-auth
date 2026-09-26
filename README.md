@@ -1,224 +1,188 @@
-# KMP Library Template
+# KMP Supabase Auth
 
-[![CI](https://github.com/MobileByteLabs/mbl-library-template-kmp/actions/workflows/gradle.yml/badge.svg)](https://github.com/MobileByteLabs/mbl-library-template-kmp/actions/workflows/gradle.yml)
-[![GitHub Release](https://img.shields.io/github/v/release/MobileByteLabs/mbl-library-template-kmp?include_prereleases)](https://github.com/MobileByteLabs/mbl-library-template-kmp/releases)
-[![Kotlin](https://img.shields.io/badge/kotlin-2.1.0-blue.svg?logo=kotlin)](http://kotlinlang.org)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+**Supabase authentication for Kotlin Multiplatform** — native Google sign-in through the Android
+Credential Manager, native Apple sign-in through `ASAuthorization` on iOS, anonymous sessions with
+an id-preserving upgrade, and a web-OAuth fallback everywhere else.
 
-A template for creating Kotlin Multiplatform libraries with full platform support and Compose Multiplatform sample app.
+Wire it into an app with **one Koin line**. Or three, one per architectural layer — they are the
+same thing, and a test proves it.
 
-## Supported Platforms
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.21-blue.svg?logo=kotlin)](https://kotlinlang.org)
+[![Compose Multiplatform](https://img.shields.io/badge/Compose-1.11.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
 
-| Platform | Targets | Status |
-|----------|---------|--------|
-| Android  | android | Supported |
-| iOS      | iosX64, iosArm64, iosSimulatorArm64 | Supported |
-| macOS    | macosX64, macosArm64 | Supported |
-| tvOS     | tvosX64, tvosArm64, tvosSimulatorArm64 | Supported |
-| watchOS  | watchosX64, watchosArm32, watchosArm64, watchosSimulatorArm64, watchosDeviceArm64 | Supported |
-| JVM      | jvm | Supported |
-| Linux    | linuxX64, linuxArm64 | Supported |
-| Windows  | mingwX64 | Supported |
-| JavaScript | js (Browser, Node.js) | Supported |
-| WebAssembly | wasmJs (Browser, Node.js), wasmWasi (Node.js) | Supported |
+> **Pre-1.0 and under construction.** The build, CI, publishing and quality stack are complete and
+> green. The auth implementation is partially landed — see [Status](#status). The API below is the
+> committed design; treat it as a contract, not as shipped code.
 
-## Installation
+---
 
-Add the dependency to your `build.gradle.kts`:
+## Why this exists
+
+Four apps in this workspace had each built their own Supabase sign-in. Only one of them actually
+worked. The other three were a generic provider interface wired to nothing, a REST client with the
+native token hardcoded to `""`, and a Supabase client with no auth at all.
+
+Auth is the worst thing to re-implement per app: a bug in it is a security bug, and a fix that only
+reaches the *next* project is close to worthless. So this is one library, versioned independently,
+that every app can depend on.
+
+## Install
 
 ```kotlin
-// In your shared module
-kotlin {
-    sourceSets {
-        commonMain.dependencies {
-            implementation("io.github.mobilebytelabs.supabaseauth:kmp-supabase-auth:1.0.0")
-        }
-    }
+dependencies {
+    implementation("io.github.mobilebytelabs:auth-core:0.1.0")     // headless
+    implementation("io.github.mobilebytelabs:auth-compose:0.1.0")  // Compose UI (optional)
 }
 ```
 
-### Platform-specific setup
-
-<details>
-<summary>Android</summary>
-
-No additional setup required.
-
-</details>
-
-<details>
-<summary>iOS</summary>
-
-No additional setup required.
-
-</details>
-
-## Quick Start
+## Quick start
 
 ```kotlin
-import io.github.mobilebytelabs.supabaseauth.Greeting
-
-fun main() {
-    val greeting = Greeting()
-    println(greeting.greet()) // Hello from [Platform]!
-    println(greeting.greet("World")) // Hello, World! Welcome from [Platform].
+val AppModule = module {
+    includes(
+        supabaseAuth(
+            SupabaseAuthConfig(
+                projectRef        = "your-project-ref",
+                googleWebClientId = BuildKonfig.GOOGLE_OAUTH_WEB_CLIENT_ID,
+                redirectUrl       = "myapp://login-callback",
+            ),
+        ),
+        supabaseAuthComposeModule(),
+    )
 }
 ```
 
-## Documentation
+```kotlin
+SupabaseLoginScreen(
+    viewModel = koinViewModel(),
+    client = koinInject(),
+    header = { YourLogo() },
+    onSignedIn = { navigateHome() },
+)
+```
 
-For detailed documentation, visit [Documentation Link].
+Console setup is the part that actually costs time:
+**[Google](docs/SETUP_GOOGLE.md)** · **[Apple](docs/SETUP_APPLE.md)**.
 
-## Getting Started with Development
+## Modules
 
-### Prerequisites
+| Module | Targets | What it owns |
+|---|---|---|
+| **[auth-core](auth-core/README.md)** | 8 | Config, Supabase client boundary, Store5 session store, repository, Koin DI |
+| **[auth-compose](auth-compose/README.md)** | 6 | `remember*` sign-in wrappers, provider buttons, login screen, ViewModel |
+| `sample-app` | — | Runnable proof. Not published |
 
-- JDK 17 or higher
-- Android SDK (for Android development)
-- Xcode 15+ (for iOS development, macOS only)
+Target counts are **measured** against Maven Central, not inferred — see
+**[TARGET_MATRIX.md](TARGET_MATRIX.md)**.
 
-### Setup
+## Two wiring modes, one implementation
 
-1. Clone the repository:
+Drop it in anywhere:
+
+```kotlin
+includes(supabaseAuth(config))
+```
+
+…or place each rung in the layer it belongs to:
+
+```kotlin
+// core/network/di/ProjectNetworkModule.kt   ← owner:fork, survives template sync
+includes(supabaseAuthNetwork(config))
+
+// core/store/di/StoreModule.kt
+includes(supabaseAuthStore())
+
+// core/data/di/ProjectRepositoryModule.kt
+includes(supabaseAuthRepository())
+```
+
+`supabaseAuth(config)` is *defined as* those three includes, so the two forms cannot drift apart.
+A test asserts their Koin binding sets are identical — the guarantee is enforced, not documented.
+
+## Three things worth knowing before you build on it
+
+**It never creates a Supabase client.** The library installs `Auth` and `ComposeAuth` onto the one
+your app already has, through kmp-project-template's `SupabaseExtrasProvider` seam. Building a
+second client to get `Auth` hands your generated API bindings a different instance carrying no
+session — so every RLS-gated call resolves no `auth.uid()`, while compiling cleanly and passing
+static checks the whole way.
+
+**Signed-in comes from the session stream, never the button callback.** On Android the native
+Google `onResult(Success)` callback frequently never fires even though the exchange succeeded and
+the session landed — verified on-device, with the app stuck on "Signing in…" while Supabase logged
+`Authenticated`. The ViewModel watches `AuthRepository.isSignedIn`; `onResult` is used only for
+error cases, which do fire reliably.
+
+**The library owns the session; your app keeps owning the user.** Profile data stays in your
+`UserDataStore` / `UserPreferencesRepository`, untouched. `AuthUser` carries identity only. There
+is never a second owner of state you already own.
+
+## Guest sessions
+
+`signInAnonymously()` creates a real Supabase session with `is_anonymous = true`, so RLS works
+immediately and guest data lives server-side from the first write. `linkIdentity(provider)`
+upgrades a guest **without changing the user id**, so nothing has to be migrated.
+
+The limit, stated rather than papered over: upgrade works on the same install. A guest who signs
+in on a second device gets a different id. Cross-device guest merge is out of scope.
+
+## Platform support
+
+|  | Android | iOS | Desktop | Web | macOS |
+|---|---|---|---|---|---|
+| Google | native (Credential Manager) | native | OAuth redirect | OAuth redirect | OAuth redirect |
+| Apple | OAuth redirect | native (ASAuthorization) | OAuth redirect | OAuth redirect | OAuth redirect |
+| Anonymous | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**macOS gets no native Apple sign-in** — `compose-auth` publishes no macOS artifact at all, so
+`auth-compose` cannot reach macOS. Measured, not an oversight.
+
+## Development
+
 ```bash
-git clone https://github.com/MobileByteLabs/kmp-supabase-auth.git
-cd kmp-supabase-auth
+./gradlew build                 # all modules, all targets
+./gradlew jvmTest               # fast loop
+./gradlew koverHtmlReport       # coverage
+./gradlew apiDump               # regenerate BCV baselines after an API change
+./gradlew spotlessApply detekt  # format + static analysis
+./ci-prepush.sh                 # what CI runs, locally
 ```
 
-2. Customize the template (first time only):
-```bash
-bash customizer.sh com.yourpackage.library YourLibraryName your-org
-```
+Requires JDK 17+. CI runs 21.
 
-3. Set up git hooks:
-```bash
-bash scripts/setup-hooks.sh
-```
+### CI
 
-4. Build the project:
-```bash
-./gradlew build
-```
+| Workflow | Runs |
+|---|---|
+| `pr-check.yml` | Quality + JVM tests, docs gate, Kover coverage, BCV `apiCheck` |
+| `gradle.yml` | Full multi-platform build on push |
+| `native-tests.yml` | Kotlin/Native test execution, nightly / opt-in |
+| `development-md-coherence.yml` | `DEVELOPMENT.md` structure per module |
+| `publish.yml` / `publish-trigger.yml` | Maven Central publishing |
+| `docs-publish.yml` / `sync-docs-to-wiki.yml` | mkdocs site + wiki |
 
-### Running Tests
+The quality stack — Kover, Detekt, Spotless, BCV, the docs gate, native tests — is ported from
+[KmpToolkit](https://github.com/MobileByteLabs/KmpToolkit). Its observability gate is deliberately
+**not** ported: `cmp-observe`'s published jvm artifact is compiled at Java 21, which would force
+JDK 21 on every desktop consumer of this library.
 
-```bash
-# All platforms
-./gradlew allTests
+## Status
 
-# Specific platforms
-./gradlew jvmTest
-./gradlew iosSimulatorArm64Test
-./gradlew testAndroidHostTest
-./gradlew linuxX64Test
-```
-
-### Code Quality
-
-```bash
-# Format code
-./gradlew spotlessApply
-
-# Run static analysis
-./gradlew detekt
-```
-
-### Sample App
-
-A Compose Multiplatform sample app is included to test the library on all platforms:
-
-```bash
-# Run on Desktop (macOS, Windows, Linux)
-./gradlew :sample-app:run
-
-# Run on Android
-./gradlew :sample-app:installDebug
-
-# Run on iOS (requires Xcode on macOS)
-# Open sample-app in Xcode or use KMM plugin in Android Studio
-
-# Run on Web (WebAssembly)
-./gradlew :sample-app:wasmJsBrowserRun
-```
-
-## Publishing to Maven Central
-
-### Prerequisites
-
-1. Create a [Sonatype account](https://central.sonatype.com/)
-2. Generate a GPG key for signing
-3. Configure GitHub secrets:
-   - `MAVEN_CENTRAL_USERNAME` - Sonatype username
-   - `MAVEN_CENTRAL_PASSWORD` - Sonatype password
-   - `SIGNING_KEY_ID` - GPG key ID
-   - `SIGNING_PASSWORD` - GPG key password
-   - `GPG_KEY_CONTENTS` - Base64 encoded GPG private key
-
-### Release Process
-
-1. Update version in `cmp-library/build.gradle.kts`
-2. Create a GitHub release with a tag (e.g., `v1.0.0`)
-3. The publish workflow will automatically deploy to Maven Central
-
-## Project Structure
-
-```
-.
-├── cmp-library/                # Library module
-│   └── src/
-│       ├── commonMain/         # Common code (all platforms)
-│       ├── commonTest/         # Common tests
-│       ├── androidMain/        # Android-specific code
-│       ├── jvmMain/            # JVM-specific code
-│       ├── appleMain/          # Apple platforms (iOS, macOS, tvOS, watchOS)
-│       ├── linuxMain/          # Linux platforms (linuxX64, linuxArm64)
-│       ├── mingwMain/          # Windows (mingwX64)
-│       ├── jsMain/             # JavaScript (Browser, Node.js)
-│       ├── wasmJsMain/         # WebAssembly JS
-│       └── wasmWasiMain/       # WebAssembly WASI
-├── sample-app/                 # Compose Multiplatform sample app
-│   └── src/
-│       ├── commonMain/         # Shared UI code
-│       ├── androidMain/        # Android app entry
-│       ├── desktopMain/        # Desktop app entry
-│       ├── iosMain/            # iOS app entry
-│       └── wasmJsMain/         # Web app entry
-├── scripts/                    # Automation scripts
-│   ├── pre-commit.sh           # Pre-commit hook
-│   ├── pre-push.sh             # Pre-push hook
-│   └── setup-hooks.sh          # Hook setup script
-├── config/
-│   └── detekt/                 # Detekt configuration
-├── .github/
-│   ├── workflows/              # GitHub Actions
-│   └── ISSUE_TEMPLATE/         # Issue templates
-├── customizer.sh               # Template customization script
-└── build.gradle.kts            # Root build configuration
-```
+| Area | State |
+|---|---|
+| Build, CI, publishing, quality gates | ✅ complete |
+| `SupabaseAuthConfig`, `SupabaseAuth.validate` | ✅ landed, tested |
+| Client, session store, repository, Koin modules | 🚧 designed, not yet implemented |
+| Compose UI — buttons, login screen, ViewModel | 🚧 designed, not yet implemented |
+| Setup documentation | ✅ complete |
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Each module's `DEVELOPMENT.md`
+([auth-core](auth-core/DEVELOPMENT.md) · [auth-compose](auth-compose/DEVELOPMENT.md)) carries the
+per-module contributor docs, and CI enforces their structure.
 
 ## License
 
-```
-Copyright 2025 MobileByteLabs
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
-
-## Acknowledgments
-
-- [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
-- [Gradle Maven Publish Plugin](https://vanniktech.github.io/gradle-maven-publish-plugin/)
+Apache 2.0 — see [LICENSE](LICENSE).

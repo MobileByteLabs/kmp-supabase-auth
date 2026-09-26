@@ -1,0 +1,31 @@
+# Release Notes — delegates to mbl-actionhub reusable workflow
+#
+# Fires on release events (and via manual dispatch for backfill) and asks the
+# centralized release-notes-from-changelog workflow to prepend the matching
+# CHANGELOG.md section as "What's changed" above the publish workflow's
+# auto-generated "Published Modules" artifact list.
+#
+# Source workflow: MobileByteLabs/mbl-actionhub
+# Reusable workflow docs:
+#   https://github.com/MobileByteLabs/mbl-actionhub#release-notes--release-notes-from-changelogyml
+
+name: Release Notes
+
+on:
+  release:
+    types: [created, published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to enrich (e.g. v3.4.0)'
+        required: true
+        type: string
+
+jobs:
+  enrich:
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/release-notes-from-changelog.yml@v1.9.1
+    permissions:
+      contents: write
+    with:
+      tag: ${{ github.event.release.tag_name || inputs.tag }}
+    secrets: inherit
