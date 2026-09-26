@@ -15,9 +15,9 @@ run-name: "📚 Docs · ${{ github.event.pull_request.title || github.ref_name }
 #                    and a preview deploy per PR is not worth the secret exposure here.
 #   push to dev   →  assemble + verify + deploy to production.
 #
-# Custom domain: docs.kmp-supabase-auth.mobilebytesensei.com
-# (matches docs.paycraft.mobilebytesensei.com). The domain is attached to the Pages project in
-# the Cloudflare dashboard, not here — wrangler deploys to the project, Cloudflare routes it.
+# Site: https://kmp-supabase-auth-docs.pages.dev (Cloudflare's own subdomain — no custom domain
+# and therefore no DNS to maintain). Attaching docs.kmp-supabase-auth.mobilebytesensei.com later
+# is a dashboard change only; this workflow deploys to the PROJECT and Cloudflare routes it.
 
 on:
   push:
@@ -108,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: docs
-      url: https://docs.kmp-supabase-auth.mobilebytesensei.com
+      url: https://kmp-supabase-auth-docs.pages.dev
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -137,15 +137,17 @@ jobs:
       # The path is REPO-ROOT-RELATIVE: a `uses:` step ignores any job-level
       # `defaults.run.working-directory`.
       #
-      # `--branch=main` is the Cloudflare Pages PRODUCTION-BRANCH ALIAS, not a git branch. It must
-      # match whatever the Pages project calls its production branch, or these become PREVIEW
-      # deployments and the custom domain stops updating — with the run still reporting success.
+      # `--branch=dev` is the Cloudflare Pages PRODUCTION-BRANCH ALIAS. It must match what the
+      # Pages project calls its production branch (set to `dev` to mirror this repo's default
+      # branch), or these become PREVIEW deployments and kmp-supabase-auth-docs.pages.dev stops
+      # updating — with the run still reporting success. Verify with:
+      #   GET /accounts/{id}/pages/projects/kmp-supabase-auth-docs -> .result.production_branch
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy _site --project-name=kmp-supabase-auth-docs --branch=main
+          command: pages deploy _site --project-name=kmp-supabase-auth-docs --branch=dev
 
       - name: Summary
         run: |
@@ -153,5 +155,5 @@ jobs:
             echo "### 📚 Docs deployed"
             echo
             echo "- Project: \`kmp-supabase-auth-docs\`"
-            echo "- URL: https://docs.kmp-supabase-auth.mobilebytesensei.com"
+            echo "- URL: https://kmp-supabase-auth-docs.pages.dev"
           } >> "$GITHUB_STEP_SUMMARY"
