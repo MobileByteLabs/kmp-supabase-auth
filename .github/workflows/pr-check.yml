@@ -1,12 +1,13 @@
 # PR Check Workflow — fast gate on pull requests
-# Runs quality + JVM tests only (iOS/Linux skipped for speed).
-# Full build runs on push to main/development via gradle.yml.
+# Runs quality + JVM tests on changed modules only (iOS/Linux skipped for speed).
+# Full build (all modules) runs on push to dev via gradle.yml.
+# Native test EXECUTION is nightly / opt-in — see native-tests.yml.
 
 name: PR Check
 
 on:
   pull_request:
-    branches: [ "main", "development" ]
+    branches: [ "main", "dev" ]
 
 permissions:
   contents: read
@@ -17,11 +18,96 @@ concurrency:
 
 jobs:
   pr-check:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.6.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/ci-kmp-library.yml@v1.9.1
     with:
+      # This repo publishes cmp-supabase-auth + cmp-supabase-auth-compose. `sample-app` is outside the
+      # pattern — samples are proof, not artifacts, and must never reach Maven Central.
       module-pattern: 'cmp-'
       java-version: '21'
       java-distribution: 'zulu'
       run-quality: true
       run-ios-tests: false
       run-linux-tests: false
+
+  # ── Docs gate ────────────────────────────────────────────────────────────────────────────
+  # Pure text gate, so it runs in seconds and needs neither Gradle nor a JDK.
+  #
+  # kmp-toolkit pairs this with assert-observability-wired.sh. That gate is NOT ported here: it
+  # presupposes a cmp-observe dependency, whose published jvm artifact is compiled at Java 21
+  # (class file 65). Taking it would force JDK 21 on every desktop consumer of cmp-supabase-auth, which
+  # is too high a price for lifecycle hooks. Revisit if cmp-observe ships a lower-target jvm jar.
+  docs-gate:
+    name: Docs Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assert every module has complete docs with resolving links
+        run: bash .github/scripts/assert-docs-complete.sh
+
+  # ── Kover coverage ───────────────────────────────────────────────────────────────────────
+  # Separate job rather than an input to the reusable workflow above: ci-kmp-library.yml exposes
+  # no coverage option, and coverage aggregates at the ROOT (KoverConventionPlugin) rather than
+  # per module, so it does not fit that workflow's per-module matrix.
+  coverage:
+    name: Kover Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Robolectric fetches its android-all image into ~/.m2 on first use and setup-gradle does
+      # not cache that path. Keyed on the catalog so a version bump invalidates it rather than
+      # silently serving a stale image.
+      - name: Cache Robolectric android-all images
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: robolectric-${{ runner.os }}-
+
+      - name: Run tests + Kover XML report
+        run: ./gradlew koverXmlReport
+
+      # Non-gating today: `koverLineMin=0` in gradle.properties, because coverage has never been
+      # measured on this repo. Raise that property to turn this into a real gate once there is a
+      # baseline worth defending.
+      - name: Verify coverage floor
+        run: ./gradlew koverVerify
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kover-report
+          path: '**/build/reports/kover/**'
+          if-no-files-found: warn
+
+      - name: Coverage summary
+        if: always()
+        run: bash .github/scripts/kover-summary.sh
+
+  # ── Binary compatibility ─────────────────────────────────────────────────────────────────
+  # Both publishable modules carry BCV baselines under api/. A public-API change that is not
+  # accompanied by a regenerated baseline fails here — which is the point: the diff in the PR
+  # is what makes an accidental breaking change visible to a reviewer.
+  api-check:
+    name: Binary Compatibility (BCV)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: apiCheck
+        run: ./gradlew apiCheck

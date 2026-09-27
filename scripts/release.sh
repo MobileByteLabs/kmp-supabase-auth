@@ -4,7 +4,7 @@
 # =============================================================================
 # Single script for the complete release pipeline:
 #   1. Run quality gates (spotless + detekt + tests)
-#   2. Merge development → main (with PR fallback)
+#   2. Merge dev → main (with PR fallback)
 #   3. Create git tag vX.Y.Z on main
 #   4. Push tag → GitHub Actions → GitHub Release → Maven Central publish
 #
@@ -14,7 +14,7 @@
 #   ./scripts/release.sh --bump minor             # auto-bump (major|minor|patch)
 #   ./scripts/release.sh --module cmp-clipboard   # release single module
 #   ./scripts/release.sh --dry-run                # checks only, no merge/tag/push
-#   ./scripts/release.sh --skip-merge             # skip development→main merge
+#   ./scripts/release.sh --skip-merge             # skip dev→main merge
 #   ./scripts/release.sh --local                  # also publish to local Maven (~/.m2)
 #   ./scripts/release.sh list                     # list publishable modules
 #   ./scripts/release.sh verify                   # run quality gates only
@@ -242,21 +242,21 @@ cmd_release() {
         log_step "[2/6] Version unchanged ($VERSION)"
     fi
 
-    # ── Step 5: Merge development → main ─────────────────────────
+    # ── Step 5: Merge dev → main ─────────────────────────
     if [ "$SKIP_MERGE" = false ]; then
-        log_step "[5/8] Merging development → main..."
-        git fetch origin development main 2>/dev/null || true
+        log_step "[5/8] Merging dev → main..."
+        git fetch origin dev main 2>/dev/null || true
 
-        local behind=$(git rev-list origin/main..origin/development --count 2>/dev/null || echo "0")
+        local behind=$(git rev-list origin/main..origin/dev --count 2>/dev/null || echo "0")
 
         if [ "$behind" = "0" ]; then
-            log_pass "main is up-to-date with development"
+            log_pass "main is up-to-date with dev"
         else
-            echo "   development is $behind commit(s) ahead"
+            echo "   dev is $behind commit(s) ahead"
             git checkout main
             git pull origin main --ff-only
 
-            if git merge --ff-only origin/development 2>/dev/null; then
+            if git merge --ff-only origin/dev 2>/dev/null; then
                 git push origin main
                 log_pass "Fast-forward merge succeeded"
             else
@@ -265,7 +265,7 @@ cmd_release() {
                     log_fail "gh CLI required. Install: https://cli.github.com"
                 fi
                 local pr_url=$(gh pr create --repo "$github_repo" \
-                    --base main --head development \
+                    --base main --head dev \
                     --title "chore: release $TAG" \
                     --body "Automated merge for release $TAG" 2>&1 | tail -1)
                 local pr_number=$(echo "$pr_url" | grep -oE '[0-9]+$')

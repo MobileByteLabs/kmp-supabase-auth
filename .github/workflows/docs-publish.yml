@@ -1,24 +1,159 @@
-name: Publish docs (mkdocs → GitHub Pages)
+name: Docs · docsify → Cloudflare Pages
+run-name: "📚 Docs · ${{ github.event.pull_request.title || github.ref_name }}"
 
-# Delegates to the reusable workflow in mbl-actionhub. The mkdocs build
-# + Pages deploy logic lives there as a single source of truth across
-# every MobileByteLabs KMP library that publishes documentation.
-# Repo Pages source must be set to "GitHub Actions" (build_type=workflow).
+# docsify renders Markdown in the BROWSER — there is no site generator to run, so this workflow
+# only assembles the files docsify will fetch and hands them to Cloudflare Pages.
+#
+# ONE PUBLISHER, ONE HOST. This replaced a GitHub Pages deploy rather than joining it. PayCraft
+# learned that the expensive way: its docs site once had THREE publishers racing on every push
+# (a workflow, a Cloudflare Pages Git integration, and a Workers Builds connection), and the site
+# quietly stopped updating. If you add a Cloudflare Git integration for this repo, delete this
+# workflow — do not run both.
+#
+# TWO MODES:
+#   pull_request  →  assemble + verify links only. No deploy: a fork PR has no Cloudflare token,
+#                    and a preview deploy per PR is not worth the secret exposure here.
+#   push to dev   →  assemble + verify + deploy to production.
+#
+# Site: https://kmp-supabase-auth-docs.pages.dev (Cloudflare's own subdomain — no custom domain
+# and therefore no DNS to maintain). Attaching docs.kmp-supabase-auth.mobilebytesensei.com later
+# is a dashboard change only; this workflow deploys to the PROJECT and Cloudflare routes it.
 
 on:
   push:
-    branches: [development]
+    branches: [dev]
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'README.md'
+      - 'TARGET_MATRIX.md'
+      - 'CONTRIBUTING.md'
+      - 'cmp-*/README.md'
+      - 'cmp-*/DEVELOPMENT.md'
       - '.github/workflows/docs-publish.yml'
+      - '.github/scripts/assert-docs-links.py'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'TARGET_MATRIX.md'
+      - 'cmp-*/README.md'
+      - 'cmp-*/DEVELOPMENT.md'
+      - '.github/workflows/docs-publish.yml'
+      - '.github/scripts/assert-docs-links.py'
   workflow_dispatch:
+  # Invoked by docs-refresh.yml AFTER it lands regenerated content, so the site serves the
+  # refreshed docs rather than the commit that preceded them.
+  workflow_call:
+
+concurrency:
+  group: docs-publish-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  publish:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/docs-publish-mkdocs.yml@v1.9.1
+  build:
+    name: Assemble site & verify links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stage site
+        run: |
+          set -euo pipefail
+          # The site is an exact MIRROR of the repo's doc layout. That is deliberate: the docs
+          # reuse the repo's real Markdown, and mirroring means every relative link those files
+          # already contain resolves unchanged. Flattening to the site root was tried and broke
+          # 14 links, because `../TARGET_MATRIX.md` escapes the root.
+          mkdir -p _site/docs
+          # docsify's entry point + conventions belong at the SITE ROOT, not under docs/.
+          cp docs/index.html docs/_sidebar.md docs/_navbar.md docs/_coverpage.md _site/
+          # Authored pages keep their docs/ path.
+          for f in docs/*.md; do
+            case "$(basename "$f")" in _sidebar.md|_navbar.md|_coverpage.md) continue ;; esac
+            cp "$f" _site/docs/
+          done
+          # Root-level docs, at their repo paths.
+          cp README.md TARGET_MATRIX.md CONTRIBUTING.md _site/
+          [ -f LICENSE ] && cp LICENSE _site/
+          [ -f CODE_OF_CONDUCT.md ] && cp CODE_OF_CONDUCT.md _site/
+          # Per-module docs, at their repo paths.
+          for m in cmp-*/; do
+            [ -f "$m/README.md" ] || continue
+            mkdir -p "_site/$m"
+            cp "$m/README.md" "_site/$m/"
+            [ -f "$m/DEVELOPMENT.md" ] && cp "$m/DEVELOPMENT.md" "_site/$m/"
+          done
+          # Cloudflare Pages does not run Jekyll, so `.nojekyll` is not strictly required here —
+          # kept so the same _site/ can be served by GitHub Pages or `npx serve` unchanged.
+          touch _site/.nojekyll
+
+      - name: Verify every relative link in the assembled site resolves
+        run: python3 .github/scripts/assert-docs-links.py _site
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docs-site
+          path: _site
+          retention-days: 7
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: build
+    # Deploy only from the default branch. A fork PR has no access to the Cloudflare secrets, so
+    # attempting it there fails in a way that reads as a Cloudflare problem rather than a
+    # by-design skip.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: docs
+      url: https://kmp-supabase-auth-docs.pages.dev
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: _site
+
+      # Names come from core/registries/SECRETS_ALIAS_REGISTRY.yaml, which is the SoT:
+      #   mbs-cloudflare-pages-api-token -> CLOUDFLARE_PAGES_API_TOKEN
+      #   mbs-cloudflare-account-id      -> CLOUDFLARE_ACCOUNT_ID
+      # Inventing a shorter name here would leave the synced secret unread and the deploy
+      # failing as if Cloudflare were down.
+      #
+      # An unset secret interpolates to an EMPTY STRING rather than erroring, and wrangler with
+      # an empty token fails in a way that reads as a Cloudflare outage rather than a missing
+      # secret. Assert first. Do NOT turn this into a warn-and-skip: that is how a misconfigured
+      # deploy reports success while the site silently stops updating.
+      - name: Assert Cloudflare secrets are present
+        env:
+          CLOUDFLARE_PAGES_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for v in CLOUDFLARE_PAGES_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            [ -n "${!v}" ] || { echo "::error::$v repo secret is empty or unset"; exit 1; }
+          done
+
+      # The path is REPO-ROOT-RELATIVE: a `uses:` step ignores any job-level
+      # `defaults.run.working-directory`.
+      #
+      # `--branch=dev` is the Cloudflare Pages PRODUCTION-BRANCH ALIAS. It must match what the
+      # Pages project calls its production branch (set to `dev` to mirror this repo's default
+      # branch), or these become PREVIEW deployments and kmp-supabase-auth-docs.pages.dev stops
+      # updating — with the run still reporting success. Verify with:
+      #   GET /accounts/{id}/pages/projects/kmp-supabase-auth-docs -> .result.production_branch
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=kmp-supabase-auth-docs --branch=dev
+
+      - name: Summary
+        run: |
+          {
+            echo "### 📚 Docs deployed"
+            echo
+            echo "- Project: \`kmp-supabase-auth-docs\`"
+            echo "- URL: https://kmp-supabase-auth-docs.pages.dev"
+          } >> "$GITHUB_STEP_SUMMARY"

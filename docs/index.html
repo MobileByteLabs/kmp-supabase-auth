@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KMP Supabase Auth</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <meta name="description"
+        content="Supabase authentication for Kotlin Multiplatform — native Google and Apple sign-in, anonymous sessions, and one-line Koin wiring.">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Apply the stored theme BEFORE first paint. Without this the page renders in the system
+       theme and then snaps to the stored one, which is a visible flash on every navigation. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('kmpsa-theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      } catch (e) { /* private mode: fall through to the system preference */ }
+    })();
+  </script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    /* ── Theme tokens ───────────────────────────────────────────────────────────────────────
+       THREE states, not two:
+         :root                                        → light (the default)
+         @media (prefers-color-scheme: dark) guarded  → dark, when the visitor has expressed
+           by :root:not([data-theme="light"])            no explicit choice
+         :root[data-theme="dark"]                     → dark, chosen explicitly
+       The guard is what makes the toggle win in BOTH directions. Without it, a visitor on a
+       dark OS who picks light gets the media query applied on top and nothing appears to
+       happen. Every colour below is defined on bare :root first, so no value exists only
+       inside a media block. */
+    :root {
+      --theme-color: #3ecf8e;              /* Supabase green */
+      --sidebar-width: 17rem;
+
+      --bg:            #ffffff;
+      --bg-elevated:   #f8fafb;
+      --fg:            #34495e;
+      --fg-strong:     #2c3e50;
+      --fg-muted:      #64757f;
+      --border:        #e3e8eb;
+      --code-bg:       #f3f5f6;
+      --quote-bg:      #f6fbf9;
+      --navbar-fg:     #44555c;
+      --cover-grad:    linear-gradient(160deg, #0b1f18 0%, #10231c 45%, #12161c 100%);
+    }
+
+    /* Flat form, not CSS nesting: nesting a @media inside a selector needs a recent engine,
+       and a docs site should not require one to render its own colours. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:          #12161c;
+        --bg-elevated: #171c23;
+        --fg:          #c9d1d9;
+        --fg-strong:   #e6edf3;
+        --fg-muted:    #8b98a5;
+        --border:      #30363d;
+        --code-bg:     #1b2028;
+        --quote-bg:    #16211d;
+        --navbar-fg:   #b3c0c9;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg:          #12161c;
+      --bg-elevated: #171c23;
+      --fg:          #c9d1d9;
+      --fg-strong:   #e6edf3;
+      --fg-muted:    #8b98a5;
+      --border:      #30363d;
+      --code-bg:     #1b2028;
+      --quote-bg:    #16211d;
+      --navbar-fg:   #b3c0c9;
+    }
+
+    /* ── Base ───────────────────────────────────────────────────────────────────────────── */
+    body { background: var(--bg); color: var(--fg); }
+    .sidebar, .sidebar-toggle { background: var(--bg); }
+    .sidebar ul li a { color: var(--fg); }
+    .app-name-link img { max-width: 70%; }
+
+    .markdown-section code { border-radius: 3px; background: var(--code-bg); }
+    .markdown-section pre { background: var(--code-bg); }
+    .markdown-section pre > code { background: transparent; }
+    .markdown-section table { display: table; width: 100%; }
+    .markdown-section table td,
+    .markdown-section table th { border-color: var(--border); }
+    .markdown-section tr { background: var(--bg); border-top-color: var(--border); }
+    .markdown-section tr:nth-child(2n) { background: var(--bg-elevated); }
+    .markdown-section h1, .markdown-section h2,
+    .markdown-section h3, .markdown-section h4,
+    .markdown-section strong { color: var(--fg-strong); }
+    .markdown-section p, .markdown-section li { color: var(--fg); }
+    /* Callouts used across the setup guides */
+    .markdown-section blockquote {
+      border-left: 4px solid var(--theme-color);
+      background: var(--quote-bg);
+      color: var(--fg);
+    }
+
+    /* The search plugin ships its own input styling, which ignored the tokens and left a dark
+       box sitting on a light page (and vice versa). Theme it explicitly. */
+    .sidebar .search { border-bottom-color: var(--border); }
+    .sidebar .search input {
+      background: var(--bg-elevated);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .sidebar .search input::placeholder { color: var(--fg-muted); }
+    .sidebar .search .clear-button { background: transparent; }
+    .sidebar .search .results-panel { background: var(--bg); color: var(--fg); }
+    .sidebar .search p { color: var(--fg-muted); }
+    .sidebar .search h2, .sidebar .search .matching-post a { color: var(--fg-strong); }
+
+    /* ── Navbar ─────────────────────────────────────────────────────────────────────────── */
+    /* The navbar overlays BOTH the dark cover and the content pages, so one colour is wrong on
+       one of them. docsify adds `.show` to section.cover only while the cover is displayed. */
+    body .app-nav a { color: var(--navbar-fg); }
+    body .app-nav a:hover { color: var(--theme-color); }
+    body:has(section.cover.show) .app-nav a { color: #cfdbd5; }
+    body:has(section.cover.show) .app-nav a:hover { color: var(--theme-color); }
+
+    /* ── Cover ──────────────────────────────────────────────────────────────────────────── */
+    /* Background lives here rather than in _coverpage.md's `![color]` directive — a gradient
+       value contains commas and nested parens, which docsify's parser prints verbatim. */
+    section.cover { background: var(--cover-grad) !important; }
+    section.cover .cover-main { color: #e6edf3; }
+    section.cover .cover-main > p:not(:last-child) { color: #b8c7c0; }
+    /* docsify renders the cover title as h1 > a.anchor > span, and the SPAN carries the theme
+       colour — setting h1/a alone computed to white while the visible text stayed grey.
+       Verified in-browser before fixing. */
+    section.cover .cover-main > h1,
+    section.cover h1 a,
+    section.cover h1 a span { color: #ffffff !important; font-weight: 700; }
+    section.cover h1 small {
+      display: inline-block;
+      vertical-align: super;
+      margin-left: 0.35rem;
+      font-size: 0.34em;
+      font-weight: 600;
+      opacity: 0.75;
+      color: var(--theme-color) !important;
+    }
+    section.cover .cover-main > p:last-child a {
+      border-radius: 6px;
+      padding: 0.6em 1.4em;
+      font-weight: 600;
+    }
+    section.cover .cover-main > p:last-child a:first-child {
+      background-color: var(--theme-color);
+      border-color: var(--theme-color);
+      color: #06231a;
+    }
+    section.cover blockquote { color: #9fb3ab; border-left: none; background: none; }
+    section.cover ul li { color: #cfdbd5; }
+    section.cover code { background: rgba(62, 207, 142, 0.12); color: #7ee2b8; }
+    section.cover ul { line-height: 1.9; }
+
+    /* ── Theme toggle ───────────────────────────────────────────────────────────────────── */
+    /* Bottom-right, not top-right: the navbar and docsify's GitHub corner ribbon already own
+       that corner, and overlapping them made the control unclickable on the cover. */
+    #theme-toggle {
+      position: fixed;
+      right: 1.25rem;
+      bottom: 1.25rem;
+      z-index: 100;
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--fg-strong);
+      font-size: 1.1rem;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    #theme-toggle:hover { transform: translateY(-2px); border-color: var(--theme-color); }
+    #theme-toggle:focus-visible { outline: 2px solid var(--theme-color); outline-offset: 2px; }
+    /* On the cover the control sits over a dark gradient regardless of theme. */
+    body:has(section.cover.show) #theme-toggle {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #e6edf3;
+    }
+    @media print { #theme-toggle { display: none; } }
+  </style>
+</head>
+<body>
+  <div id="app">Loading…</div>
+
+  <button id="theme-toggle" type="button" aria-live="polite" title="Toggle light / dark theme">
+    <span aria-hidden="true">🌗</span>
+  </button>
+
+  <script>
+    (function () {
+      var KEY = 'kmpsa-theme';
+      var btn = document.getElementById('theme-toggle');
+
+      function systemPrefersDark() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      function effective() {
+        var set = document.documentElement.getAttribute('data-theme');
+        return set || (systemPrefersDark() ? 'dark' : 'light');
+      }
+      function paint() {
+        var dark = effective() === 'dark';
+        // Show the icon for what clicking DOES, not for the current state — a sun on a light
+        // page reads as "you are in light mode", which is the opposite of an action label.
+        btn.firstElementChild.textContent = dark ? '☀️' : '🌙';
+        btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      }
+
+      btn.addEventListener('click', function () {
+        var next = effective() === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        try { localStorage.setItem(KEY, next); } catch (e) { /* private mode: session-only */ }
+        paint();
+      });
+
+      // Follow the OS only while the visitor has made no explicit choice.
+      if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+          if (!document.documentElement.getAttribute('data-theme')) paint();
+        });
+      }
+
+      paint();
+    })();
+  </script>
+
+  <script>
+    window.$docsify = {
+      name: 'KMP Supabase Auth',
+      repo: 'MobileByteLabs/kmp-supabase-auth',
+      loadSidebar: true,
+      loadNavbar: true,
+      coverpage: true,
+      // With loadSidebar/loadNavbar, docsify probes for a DIRECTORY-LOCAL _sidebar.md before
+      // falling back to the root one — so browsing into cmp-supabase-auth/ produced a pair of
+      // harmless-but-noisy 404s per page load. There is only ever one sidebar here; alias every
+      // lookup to it so the console stays clean and a real 404 is actually visible.
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md',
+        '/.*/_navbar.md': '/_navbar.md',
+      },
+      subMaxLevel: 3,
+      auto2top: true,
+      relativePath: true,
+      maxLevel: 4,
+      search: {
+        depth: 4,
+        placeholder: 'Search the docs…',
+        noData: 'No results.',
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        successText: 'Copied',
+      },
+      pagination: {
+        crossChapter: true,
+        crossChapterText: true,
+      },
+      // A dedicated docs landing page, NOT the repo README: the README is written for someone
+      // browsing GitHub (badges, status table, contributing), while this is written for someone
+      // who arrived to learn the library. Reusing the README made the site read like a repo.
+      homepage: 'docs/home.md',
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-kotlin.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-gradle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml-doc.min.js"></script>
+</body>
+</html>

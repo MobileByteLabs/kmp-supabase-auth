@@ -11,7 +11,7 @@ plugins {
 
 kotlin {
     androidLibrary {
-        namespace = "io.github.template.sample"
+        namespace = "io.github.mobilebytelabs.supabaseauth.sample"
         compileSdk =
             libs.versions.android.compileSdk
                 .get()
@@ -58,30 +58,30 @@ kotlin {
         }
 
         commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.components.ui.tooling.preview)
+            implementation(compose.runtime)
+            implementation(compose.foundation)
+            implementation(compose.material3)
+            implementation(compose.ui)
+            implementation(compose.components.resources)
+            implementation(compose.components.uiToolingPreview)
 
             // Include the library
-            implementation(project(":cmp-library"))
+            implementation(project(":cmp-supabase-auth"))
         }
 
         jvmMain.dependencies {
-            implementation(libs.compose.desktop.currentOs)
+            implementation(compose.desktop.currentOs)
         }
     }
 }
 
 compose.desktop {
     application {
-        mainClass = "io.github.template.sample.MainKt"
+        mainClass = "io.github.mobilebytelabs.supabaseauth.sample.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.github.template.sample"
+            packageName = "io.github.mobilebytelabs.supabaseauth.sample"
             packageVersion = "1.0.0"
         }
     }

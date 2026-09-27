@@ -1,15 +1,30 @@
 [versions]
-agp = "9.2.1"
-kotlin = "2.3.21"
-compose-multiplatform = "1.11.0"
+agp = "9.4.0"
+kotlin = "2.4.20"
+compose-multiplatform = "1.12.0"
 android-minSdk = "24"
-android-compileSdk = "36"
+android-compileSdk = "37"
 android-targetSdk = "36"
 vanniktechMavenPublish = "0.36.0"
+dokka = "2.0.0"
+kover = "0.9.9"
+binaryCompatibilityValidator = "0.18.1"
+
+# Supabase — measured publication sets on Maven Central 2026-09-26:
+#   auth-kt       17 targets (no linuxArm64 / watchosArm32 / watchosDeviceArm64 / wasmWasi)
+#   compose-auth   7 targets (NO macOS artifact at all)
+supabase = "3.8.0"
+
+# Store5 5.1.0-beta01 — 8 targets (no macOS / tvOS / watchOS / mingwX64 / linuxArm64).
+# This is what caps cmp-supabase-auth at 8; see README "Target matrix".
+store = "5.1.0-beta01"
+
+koin = "4.1.1"
+
 
 # Code Quality
 detekt = "1.23.8"
-spotless = "8.5.1"
+spotless = "8.10.2"
 ktlint = "1.8.0"
 
 # Testing
@@ -25,24 +40,38 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }
 
+# Supabase Auth (GoTrue) — session lifecycle, OAuth providers, anonymous sign-in.
+supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
+# compose-auth: rememberSignInWithGoogle() drives the native Android Credential Manager and the
+# native iOS ASAuthorization flow, GoTrue OAuth redirect elsewhere — all from commonMain.
+supabase-compose-auth = { module = "io.github.jan-tennert.supabase:compose-auth", version.ref = "supabase" }
+supabase-compose-auth-ui = { module = "io.github.jan-tennert.supabase:compose-auth-ui", version.ref = "supabase" }
+
+# Store5 — memory-only session store (Fetcher.ofFlow over GoTrue sessionStatus).
+store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store" }
+
+# Koin — the DI surface consumers wire with one line.
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+
+
+# build-logic convention plugins (compileOnly in build-logic/convention).
+dokka-gradle = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+kover-gradlePlugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
+
 # Detekt
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 
 # AndroidX
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 
-# Compose Multiplatform
-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose-multiplatform" }
-compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose-multiplatform" }
-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-multiplatform" }
-compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose-multiplatform" }
-compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-multiplatform" }
-compose-components-ui-tooling-preview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "compose-multiplatform" }
-compose-desktop-currentOs = { module = "org.jetbrains.compose.desktop:desktop-jvm-currentOs", version.ref = "compose-multiplatform" }
-
 [plugins]
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+binaryCompatibilityValidator = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "binaryCompatibilityValidator" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

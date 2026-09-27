@@ -7,7 +7,7 @@ name: Sync docs to Wiki
 on:
   push:
     branches:
-      - development
+      - dev
     paths:
       - 'docs/**'
       - '.github/workflows/sync-docs-to-wiki.yml'

@@ -17,8 +17,8 @@ the latest generic infrastructure.
 
 ## Branch Strategy
 
-- `development` — default branch, PRs target here, CI triggers
-- `main` — release-only, merged from development during `release.sh`
+- `dev` — default branch, PRs target here, CI triggers
+- `main` — release-only, merged from dev during `release.sh`
 
 ## Module Structure
 
