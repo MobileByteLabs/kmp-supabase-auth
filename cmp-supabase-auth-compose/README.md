@@ -8,7 +8,7 @@ provider buttons, a slot-based login screen and a session-driven ViewModel. Depe
 [cmp-supabase-auth](../cmp-supabase-auth/README.md), which owns everything headless.
 
 <!-- docs-gen:badges:begin -->
-[![Version](https://img.shields.io/badge/version-0.1.0-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)
+[![Version](https://img.shields.io/badge/version-0.1.1-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth-compose?label=maven%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth-compose)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-1.12.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
@@ -20,7 +20,7 @@ provider buttons, a slot-based login screen and a session-driven ViewModel. Depe
 <!-- docs-gen:install:begin -->
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.1")
 }
 ```
 <!-- docs-gen:install:end -->
