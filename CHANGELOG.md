@@ -12,7 +12,16 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- Publishing now matches `kmp-toolkit` exactly: the modules call neither `coordinates(...)` nor
+  `publishToMavenCentral()`, and `SONATYPE_HOST` / `SONATYPE_AUTOMATIC_RELEASE` are committed to
+  `gradle.properties`. `coordinates(...)` set the plugin's `version` after the publish workflow's
+  injected `VERSION_NAME` had finalized it, failing both the 0.1.0 and 0.1.1 publishes.
+- `androidLibrary { }` → `android { }`, matching kmp-toolkit and clearing the AGP deprecation.
+- Documentation no longer states the library version as a literal anywhere. Install snippets and
+  the module table point at the live Maven Central badge, which is read from the registry and
+  cannot go stale; a CI gate rejects any reintroduced literal.
 
 ## [0.1.1] - 2026-09-27
 

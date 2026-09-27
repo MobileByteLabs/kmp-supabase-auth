@@ -8,7 +8,6 @@ session store, the repository, and the Koin wiring. No Compose — the UI lives 
 [cmp-supabase-auth-compose](../cmp-supabase-auth-compose/README.md).
 
 <!-- docs-gen:badges:begin -->
-[![Version](https://img.shields.io/badge/version-0.1.1-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=maven%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](../LICENSE)
@@ -17,10 +16,10 @@ session store, the repository, and the Koin wiring. No Compose — the UI lives 
 ## Install
 
 <!-- docs-gen:install:begin -->
+Version: see the **Maven Central** badge above (live from the registry).
+
 ```kotlin
-dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.1")
-}
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:$supabaseAuthVersion")
 ```
 <!-- docs-gen:install:end -->
 

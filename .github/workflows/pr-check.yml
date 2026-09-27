@@ -58,8 +58,16 @@ jobs:
       # --dry-run configures without uploading, so it needs no credentials.
       - name: Publish task configures (release dry-run)
         run: |
+          # ALL THREE properties the publish workflow appends to gradle.properties. Passing only
+          # SONATYPE_HOST made this gate pass while the real publish still failed on VERSION_NAME
+          # — a gate that reproduces part of a condition proves nothing about the rest.
           ./gradlew publishAllPublicationsToMavenCentralRepository --dry-run \
-            -PSONATYPE_HOST=CENTRAL_PORTAL
+            -PSONATYPE_HOST=CENTRAL_PORTAL \
+            -PSONATYPE_AUTOMATIC_RELEASE=true \
+            -PVERSION_NAME="$(grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2)"
+
+      - name: No hardcoded library version in docs
+        run: bash .github/scripts/assert-no-hardcoded-version.sh
 
       - name: Every shipped version has its changelog section
         run: |
