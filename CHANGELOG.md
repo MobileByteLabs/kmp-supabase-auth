@@ -12,7 +12,12 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- AGP `9.4.1` → `9.4.0`, matching `cappy` and `kmp-toolkit`. The library was the only repo in the
+  org on 9.4.1, and a composite build runs both builds on the root's Gradle — a mismatched AGP
+  pair yields wrong KMP metadata that surfaces as `Unresolved reference` in `commonMain`, far from
+  its cause. Aligning here rather than bumping consumers keeps the blast radius to this repo.
 
 ## [0.1.3] - 2026-09-27
 
