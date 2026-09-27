@@ -45,6 +45,19 @@ jobs:
       - name: Assert every module has complete docs with resolving links
         run: bash .github/scripts/assert-docs-complete.sh
 
+      # Runs on every PR, not just version bumps: the cheapest moment to write a release note is
+      # while the change is still in review. `--since` additionally requires that a change to
+      # shippable code (cmp-*/src, the version, the catalog) arrives with a changelog entry, so
+      # the release section is written continuously rather than reconstructed from git log at
+      # release time. Docs/CI-only PRs are exempt automatically.
+      - name: Every shipped version has its changelog section
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          # checkout@v7 is shallow by default, so the base commit is not present until fetched.
+          git fetch --no-tags --depth=1 origin "$BASE" 2>/dev/null || git fetch --no-tags origin "${{ github.base_ref }}"
+          bash .github/scripts/assert-changelog.sh --since "$BASE"
+
   # ── Kover coverage ───────────────────────────────────────────────────────────────────────
   # Separate job rather than an input to the reusable workflow above: ci-kmp-library.yml exposes
   # no coverage option, and coverage aggregates at the ROOT (KoverConventionPlugin) rather than
@@ -76,9 +89,10 @@ jobs:
       - name: Run tests + Kover XML report
         run: ./gradlew koverXmlReport
 
-      # Non-gating today: `koverLineMin=0` in gradle.properties, because coverage has never been
-      # measured on this repo. Raise that property to turn this into a real gate once there is a
-      # baseline worth defending.
+      # A REAL gate: `koverLineMin=30` in gradle.properties, set just under the 32.67% measured
+      # on 2026-09-27. It was 0 until then, which meant this step could not fail — a green check
+      # that verified nothing. Raise the floor as coverage PRs land; never lower it to make a
+      # red build pass.
       - name: Verify coverage floor
         run: ./gradlew koverVerify
 

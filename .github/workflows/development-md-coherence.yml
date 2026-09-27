@@ -1,7 +1,12 @@
 name: DEVELOPMENT.md coherence
 
 # Per RULE-LIB-DEVELOPMENT-MD-001 (consumer-library-ai-bridge epic, Phase 00 T12).
-# Validates every auth-*/DEVELOPMENT.md against the rule's core sub-checks.
+# Validates every cmp-*/DEVELOPMENT.md against the rule's core sub-checks.
+#
+# The globs below said `auth-*` until 2026-09-27 — a leftover from before the modules were
+# renamed to cmp-*. The discovery `find` therefore matched NOTHING and the job reported success
+# on every run while checking zero files: a vacuous green, not a passing gate. If this workflow
+# ever reports success again, confirm the file count it printed is non-zero.
 # Self-contained — no cross-repo checkout required (Pull request CI must run on
 # fork-PRs too where framework-RO-token isn't available).
 # Spec lives at: claude-product-cycle/layers/framework/rules/RULE-LIB-DEVELOPMENT-MD-001.md
@@ -9,8 +14,8 @@ name: DEVELOPMENT.md coherence
 on:
   pull_request:
     paths:
-      - 'auth-*/**'
-      - 'auth-*/DEVELOPMENT.md'
+      - 'cmp-*/**'
+      - 'cmp-*/DEVELOPMENT.md'
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -68,7 +73,7 @@ jobs:
 
           while IFS= read -r f; do
             validate_one "$f"
-          done < <(find . -mindepth 2 -maxdepth 2 -name DEVELOPMENT.md -path './auth-*/DEVELOPMENT.md' 2>/dev/null | sort)
+          done < <(find . -mindepth 2 -maxdepth 2 -name DEVELOPMENT.md -path './cmp-*/DEVELOPMENT.md' 2>/dev/null | sort)
 
           echo ""
           echo "----------------------------------------"

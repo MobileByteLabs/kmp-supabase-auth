@@ -25,7 +25,10 @@ without a regenerated baseline fails CI.
 
 **`cmp-supabase-auth-compose`**
 
+- `ProviderSignInPath`
 - `SignInLauncher`
+- `SignInPath`
+- `SignInPathReport`
 - `SupabaseAuthUiState`
 - `SupabaseAuthViewModel`
 <!-- docs-gen:api:end -->

@@ -1,18 +1,33 @@
 name: Publish trigger (consumer-library-ai-bridge epic AC #24)
 
-# Auto-trigger publish.yml when the dev branch receives an auth-*/ change.
+# Auto-trigger publish.yml when the dev branch receives a cmp-*/ change.
 # Delegates to mbl-actionhub's publish-on-development-push.yml@v1.8.0+ reusable workflow
 # for the debounce + dispatch logic.
 #
 # Authored 2026-05-30 (Phase 05 T7 of consumer-library-ai-bridge epic).
 
+# DISABLED push trigger — deliberately, not by neglect.
+#
+# Every publish must come from a GitHub release, because that is the only path that produces a
+# tag and a changelog-enriched release body (publish.yml sets `create-github-release: false`:
+# it EXPECTS the release to already exist). A publish dispatched from a dev push produces a
+# Maven Central artifact with no tag, no release and no notes — and Central is immutable, so
+# that version is burned permanently.
+#
+# This was latent rather than safe: the path filter below said `auth-*/**`, a leftover from the
+# cmp-* rename, so it could never match and this workflow never fired. Correcting the glob on
+# 2026-09-27 would have ARMED it, and the very next merge to dev touched four matching files.
+#
+# The paths are kept correct so that re-enabling is a one-line change. To release, create the
+# release (scripts/release.sh, or `gh release create vX.Y.Z`) and let publish.yml run from it.
 on:
-  push:
-    branches: [dev]
-    paths:
-      - 'auth-*/**'
-      - 'libs.versions.toml'
-      - 'gradle/libs.versions.toml'
+  # push:
+  #   branches: [dev]
+  #   paths:
+  #     - 'cmp-*/**'
+  #     - 'libs.versions.toml'
+  #     - 'gradle/libs.versions.toml'
+  #     - 'gradle.properties'
   workflow_dispatch:
 
 jobs:

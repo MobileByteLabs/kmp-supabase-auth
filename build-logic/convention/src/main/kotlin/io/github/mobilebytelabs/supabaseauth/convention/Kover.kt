@@ -54,10 +54,10 @@ internal fun Project.configureKoverRootReports() = koverGradle {
             }
         }
         verify {
-            // Starting floor, deliberately permissive: this is the first time coverage has
-            // been measured on this repo at all, so the number is unknown. Override with
-            // `-PkoverLineMin=N` and raise the default as coverage PRs land, rather than
-            // setting an aspirational bound that fails the build on day one.
+            // The default here is 0 only as a fallback for a consumer that sets no property;
+            // this repo pins `koverLineMin=30` in gradle.properties, just under the 32.67%
+            // measured on 2026-09-27. A 0 floor makes `koverVerify` incapable of failing, so
+            // treat an unset property as a configuration bug rather than a valid state.
             rule {
                 minBound((project.findProperty("koverLineMin") as? String)?.toIntOrNull() ?: 0)
             }

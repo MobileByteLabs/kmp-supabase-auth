@@ -7,9 +7,13 @@ an id-preserving upgrade, and a web-OAuth fallback everywhere else.
 Wire it into an app with **one Koin line**. Or three, one per architectural layer — they are the
 same thing, and a test proves it.
 
+<!-- docs-gen:badges:begin -->
+[![Version](https://img.shields.io/badge/version-0.1.0-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=maven%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-1.12.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
+<!-- docs-gen:badges:end -->
 
 > **Pre-1.0.** The API is implemented, tested and green across every declared target. It is not
 > yet published to Maven Central, and native Google/Apple sign-in has not been verified on a
