@@ -8,7 +8,7 @@ android-targetSdk = "36"
 vanniktechMavenPublish = "0.36.0"
 dokka = "2.0.0"
 kover = "0.9.9"
-binaryCompatibilityValidator = "0.18.1"
+binaryCompatibilityValidator = "0.18.2"
 
 # Supabase — measured publication sets on Maven Central 2026-09-26:
 #   auth-kt       17 targets (no linuxArm64 / watchosArm32 / watchosDeviceArm64 / wasmWasi)
