@@ -14,6 +14,18 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ### Added
 
+- `AuthSession` — `user` + `isSignedIn` as one consistent value, exposed as
+  `AuthRepository.session: StateFlow<AuthSession>`. Reading `currentUser` and `isSignedIn`
+  separately lets a collector observe them a frame apart in a combination that never occurred;
+  `session` is assigned at the same instant as both, inside the store's single update point.
+  It distinguishes three states rather than two — `isSignedOut`, `isGuest` (a real, upgradeable
+  anonymous session) and `isAuthenticated` — because a two-boolean shape cannot tell an anonymous
+  session from a real account, and anonymous is the state most likely to need different UI.
+  Carries identity only: entitlements and profile rows stay with the app, which already owns them.
+- `SupabaseAuthClient.composeAuth` in `cmp-supabase-auth-compose` — the underlying `ComposeAuth`
+  plugin, for flows the `remember*` wrappers do not cover. Deliberately an extension in the Compose
+  module: declaring it on the headless interface would pull in `compose-auth` (7 targets) and cut
+  the headless module from 17 targets to 7 for consumers who use no Compose at all.
 - Install docs now state the repository requirement. `cmp-supabase-auth-compose` needs `google()`
   alongside `mavenCentral()`, because Compose Multiplatform's transitive AndroidX dependencies
   (`androidx.savedstate`, `androidx.lifecycle-*`) are published only to Google's Maven repository.
