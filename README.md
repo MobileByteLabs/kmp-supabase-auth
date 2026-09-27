@@ -37,6 +37,11 @@ Set `supabaseAuthVersion` to the version shown by the **Maven Central** badge ab
 that badge is read live from the registry and is always the latest published release.
 
 ```kotlin
+repositories {
+    mavenCentral()
+    google() // see the note below — required only for cmp-supabase-auth-compose
+}
+
 val supabaseAuthVersion = "<see the Maven Central badge>"
 
 dependencies {
@@ -44,6 +49,15 @@ dependencies {
     implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:$supabaseAuthVersion")  // Compose UI (optional)
 }
 ```
+
+> **Why `google()`?** `cmp-supabase-auth-compose` pulls in Compose Multiplatform, whose
+> transitive AndroidX dependencies (`androidx.savedstate`, `androidx.lifecycle-*`) are
+> published to Google's Maven repository and are **not** mirrored to Maven Central.
+> Verified by resolving both modules against Central alone: the build fails on those
+> transitive artifacts, not on this library's own.
+>
+> **`cmp-supabase-auth` alone needs only `mavenCentral()`.** If you are not using the
+> Compose bindings, you do not need `google()` for this library at all.
 <!-- docs-gen:install:end -->
 
 ## Quick start

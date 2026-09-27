@@ -19,8 +19,16 @@ session store, the repository, and the Koin wiring. No Compose — the UI lives 
 Version: see the **Maven Central** badge above (live from the registry).
 
 ```kotlin
+repositories {
+    mavenCentral()
+}
+
+dependencies {
     implementation("io.github.mobilebytelabs:cmp-supabase-auth:$supabaseAuthVersion")
+}
 ```
+
+> `mavenCentral()` is sufficient — this module has no AndroidX or Compose dependencies.
 <!-- docs-gen:install:end -->
 
 <!-- docs-gen:targets:begin -->

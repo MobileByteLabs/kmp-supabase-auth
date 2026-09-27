@@ -20,8 +20,18 @@ provider buttons, a slot-based login screen and a session-driven ViewModel. Depe
 Version: see the **Maven Central** badge above (live from the registry).
 
 ```kotlin
+repositories {
+    mavenCentral()
+    google() // Compose Multiplatform pulls AndroidX artifacts not mirrored to Central
+}
+
+dependencies {
     implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:$supabaseAuthVersion")
+}
 ```
+
+> `google()` is required: this module depends on Compose Multiplatform, whose transitive
+> AndroidX dependencies are published only to Google's Maven repository.
 <!-- docs-gen:install:end -->
 
 <!-- docs-gen:targets:begin -->
