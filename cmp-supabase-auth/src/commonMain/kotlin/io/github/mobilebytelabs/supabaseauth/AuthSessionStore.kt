@@ -25,6 +25,12 @@ public interface AuthSessionStore {
     public val user: StateFlow<AuthUser?>
     public val isSignedIn: StateFlow<Boolean>
 
+    /**
+     * [user] and [isSignedIn] as one value. Updated at the same instant as both, so a collector
+     * can never observe a combination that did not occur.
+     */
+    public val session: StateFlow<AuthSession>
+
     /** Begin mirroring the client's session. Call once, eagerly, at graph construction. */
     public fun start(scope: CoroutineScope)
 
@@ -40,11 +46,18 @@ internal class DefaultAuthSessionStore(private val client: SupabaseAuthClient) :
     private val _isSignedIn = MutableStateFlow(false)
     override val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
 
+    private val _session = MutableStateFlow(AuthSession.SignedOut)
+    override val session: StateFlow<AuthSession> = _session.asStateFlow()
+
     override fun start(scope: CoroutineScope) {
         client.currentUser
             .onEach { value ->
+                // All three assigned together — that is what makes `session` trustworthy as the
+                // single consistent read. Adding a field here without updating `session` would
+                // reintroduce exactly the torn-read this type exists to prevent.
                 _user.value = value
                 _isSignedIn.value = value != null
+                _session.value = AuthSession(user = value, isSignedIn = value != null)
             }
             .launchIn(scope)
     }
@@ -57,5 +70,6 @@ internal class DefaultAuthSessionStore(private val client: SupabaseAuthClient) :
         client.signOut()
         _user.value = null
         _isSignedIn.value = false
+        _session.value = AuthSession.SignedOut
     }
 }

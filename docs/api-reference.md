@@ -15,6 +15,7 @@ without a regenerated baseline fails CI.
 - `AuthError`
 - `AuthProvider`
 - `AuthRepository`
+- `AuthSession`
 - `AuthSessionStore`
 - `AuthUser`
 - `FakeAuthRepository`

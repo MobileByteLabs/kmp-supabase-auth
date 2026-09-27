@@ -2,6 +2,7 @@ package io.github.mobilebytelabs.supabaseauth.testing
 
 import io.github.mobilebytelabs.supabaseauth.AuthProvider
 import io.github.mobilebytelabs.supabaseauth.AuthRepository
+import io.github.mobilebytelabs.supabaseauth.AuthSession
 import io.github.mobilebytelabs.supabaseauth.AuthUser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,13 @@ public class FakeAuthRepository : AuthRepository {
 
     private val _currentUser = MutableStateFlow<AuthUser?>(null)
     override val currentUser: StateFlow<AuthUser?> = _currentUser.asStateFlow()
+
+    private val _session = MutableStateFlow(AuthSession.SignedOut)
+
+    // Assigned inside emitSession alongside the other two, mirroring DefaultAuthSessionStore. A
+    // fake whose fields can drift apart lets a test pass against a state the real implementation
+    // cannot produce, which is worse than having no fake.
+    override val session: StateFlow<AuthSession> = _session.asStateFlow()
 
     private val _isSignedIn = MutableStateFlow(false)
     override val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
@@ -44,6 +52,7 @@ public class FakeAuthRepository : AuthRepository {
     public fun emitSession(user: AuthUser?) {
         _currentUser.value = user
         _isSignedIn.value = user != null
+        _session.value = AuthSession(user = user, isSignedIn = user != null)
     }
 
     override suspend fun continueAsGuest(): Result<AuthUser> = guestResult.onSuccess { emitSession(it) }
