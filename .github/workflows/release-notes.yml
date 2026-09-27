@@ -13,7 +13,17 @@ name: Release Notes
 
 on:
   release:
-    types: [created, published, edited]
+    # NOT `edited`. Enrichment prepends the changelog section above whatever the body currently
+    # holds, so firing on `edited` means every manual curation is immediately re-prepended over
+    # — the workflow fights the human. Observed while adding "never published" warnings to the
+    # v0.1.0/v0.1.1 tags: each edit was clobbered within seconds, repeatedly.
+    #
+    # Note the workflow checks out AT THE RELEASE TAG, so it reads the CHANGELOG.md frozen in
+    # that tag's tree. Correcting a changelog on `dev` cannot change what an older tag enriches
+    # with; only editing the release body can, which is precisely what `edited` was undoing.
+    #
+    # `workflow_dispatch` below remains the way to re-enrich a release deliberately.
+    types: [created, published]
   workflow_dispatch:
     inputs:
       tag:

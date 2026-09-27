@@ -12,7 +12,12 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- `release-notes.yml` no longer fires on `release: edited`. Enrichment prepends the changelog
+  section above the current body, so firing on every edit meant any manual curation of a release
+  was re-prepended over within seconds — the workflow fought the human. It now runs on `created`
+  / `published`, with `workflow_dispatch` for a deliberate re-enrich.
 
 ## [0.1.2] - 2026-09-27
 
