@@ -62,6 +62,11 @@ gen_install() {
     echo 'that badge is read live from the registry and is always the latest published release.'
     echo
     echo '```kotlin'
+    echo 'repositories {'
+    echo '    mavenCentral()'
+    echo '    google() // see the note below — required only for cmp-supabase-auth-compose'
+    echo '}'
+    echo
     echo 'val supabaseAuthVersion = "<see the Maven Central badge>"'
     echo
     echo 'dependencies {'
@@ -74,6 +79,15 @@ gen_install() {
     done
     echo '}'
     echo '```'
+    echo
+    echo '> **Why `google()`?** `cmp-supabase-auth-compose` pulls in Compose Multiplatform, whose'
+    echo '> transitive AndroidX dependencies (`androidx.savedstate`, `androidx.lifecycle-*`) are'
+    echo '> published to Google'"'"'s Maven repository and are **not** mirrored to Maven Central.'
+    echo '> Verified by resolving both modules against Central alone: the build fails on those'
+    echo '> transitive artifacts, not on this library'"'"'s own.'
+    echo '>'
+    echo '> **`cmp-supabase-auth` alone needs only `mavenCentral()`.** If you are not using the'
+    echo '> Compose bindings, you do not need `google()` for this library at all.'
   } > "$TMP/install.md"
 }
 
@@ -157,8 +171,22 @@ gen_module_install() {
     echo 'Version: see the **Maven Central** badge above (live from the registry).'
     echo
     echo '```kotlin'
+    echo 'repositories {'
+    echo '    mavenCentral()'
+    case "$m" in
+      *-compose) echo '    google() // Compose Multiplatform pulls AndroidX artifacts not mirrored to Central' ;;
+    esac
+    echo '}'
+    echo
+    echo 'dependencies {'
     echo "    implementation(\"io.github.mobilebytelabs:$m:\$supabaseAuthVersion\")"
+    echo '}'
     echo '```'
+    case "$m" in
+      *-compose) echo; echo '> `google()` is required: this module depends on Compose Multiplatform, whose transitive' ;
+                 echo '> AndroidX dependencies are published only to Google'"'"'s Maven repository.' ;;
+      *)         echo; echo '> `mavenCentral()` is sufficient — this module has no AndroidX or Compose dependencies.' ;;
+    esac
   } > "$TMP/module-install-$m.md"
 }
 

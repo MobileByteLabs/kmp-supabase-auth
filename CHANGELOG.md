@@ -12,7 +12,18 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+### Added
+
+- Install docs now state the repository requirement. `cmp-supabase-auth-compose` needs `google()`
+  alongside `mavenCentral()`, because Compose Multiplatform's transitive AndroidX dependencies
+  (`androidx.savedstate`, `androidx.lifecycle-*`) are published only to Google's Maven repository.
+  `cmp-supabase-auth` on its own resolves from `mavenCentral()` alone. Established by resolving
+  both modules from Central in a clean consumer build, not by assumption.
+
 ### Fixed
+
+- Per-module install snippets wrapped the dependency in no `dependencies { }` block, so the
+  copy-pasted Kotlin was invalid.
 
 - `release-notes.yml` no longer fires on `release: edited`. Enrichment prepends the changelog
   section above the current body, so firing on every edit meant any manual curation of a release
