@@ -34,10 +34,12 @@ nothing was ever available at either. This release carries the full library desc
 
 ## [0.1.1] - 2026-09-27
 
-**The first version actually published to Maven Central.** `0.1.0` was tagged and released on
-GitHub but never produced an artifact: the publish job failed at configuration time, before any
-upload. Nothing was ever available at `0.1.0`, so this release carries the full library described
-under `[0.1.0]` below, plus the two fixes that made publishing possible.
+> **Never published to Maven Central.** Like `0.1.0`, this tag exists on GitHub but produced no
+> artifact — the publish failed during Gradle configuration, before any upload. The fixes below
+> addressed the wrong cause: the real one was `coordinates(...)` setting the plugin's version
+> after `VERSION_NAME` had finalized it, which is fixed in `[0.1.2]`. Use **`0.1.2` or later**.
+
+These changes are included in `0.1.2`.
 
 ### Fixed
 
