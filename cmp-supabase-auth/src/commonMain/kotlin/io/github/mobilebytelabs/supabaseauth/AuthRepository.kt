@@ -11,6 +11,13 @@ import kotlinx.coroutines.flow.map
  * compile path, so auth stays swappable behind one module.
  */
 public interface AuthRepository {
+    /**
+     * The whole session as one consistent value — prefer this over reading [currentUser] and
+     * [isSignedIn] separately, which can be observed a frame apart in a combination that never
+     * actually occurred.
+     */
+    public val session: StateFlow<AuthSession>
+
     public val currentUser: StateFlow<AuthUser?>
     public val isSignedIn: StateFlow<Boolean>
 
@@ -40,6 +47,9 @@ public interface AuthRepository {
 
 internal class DefaultAuthRepository(private val client: SupabaseAuthClient, private val store: AuthSessionStore) :
     AuthRepository {
+
+    // Delegated, not re-derived: the store assigns all three in one place, so these cannot drift.
+    override val session: StateFlow<AuthSession> = store.session
 
     override val currentUser: StateFlow<AuthUser?> = store.user
     override val isSignedIn: StateFlow<Boolean> = store.isSignedIn

@@ -13,6 +13,10 @@ public final class io/github/mobilebytelabs/supabaseauth/compose/ComposableSingl
 	public final fun getLambda$1773852388$io_github_mobilebytelabs_cmp_supabase_auth_compose ()Lkotlin/jvm/functions/Function2;
 }
 
+public final class io/github/mobilebytelabs/supabaseauth/compose/ComposeAuthAccessKt {
+	public static final fun getComposeAuth (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthClient;)Lio/github/jan/supabase/compose/auth/ComposeAuth;
+}
+
 public final class io/github/mobilebytelabs/supabaseauth/compose/ComposeAuthExtrasKt {
 	public static final fun supabaseComposeAuthExtras (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;ZZ)Lkotlin/jvm/functions/Function1;
 	public static synthetic fun supabaseComposeAuthExtras$default (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;ZZILjava/lang/Object;)Lkotlin/jvm/functions/Function1;
