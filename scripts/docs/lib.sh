@@ -103,3 +103,31 @@ body = pattern.sub(lambda _m: replacement, body)
 io.open(path, "w", encoding="utf-8").write(body)
 PY
 }
+
+# Inline twin of lib_replace_block: substitutes BETWEEN the markers on a single line, adding no
+# newlines. Needed because some generated values sit inside a line rather than owning one —
+# YAML frontmatter (`version: <markers>`) and the cover page's `<small><markers></small>` chip.
+# Using the block form there produced a multi-line marker in the middle of a YAML value, which
+# the DEVELOPMENT.md coherence workflow reads as a missing `version:` field.
+lib_replace_inline() {
+  local file="$1" marker="$2" content_file="$3"
+  grep -q "<!-- ${marker}:begin -->" "$file" || {
+    echo "❌ ${file}: no '<!-- ${marker}:begin -->' marker" >&2
+    return 1
+  }
+  python3 - "$file" "$marker" "$content_file" <<'PY'
+import io, re, sys
+path, marker, content_path = sys.argv[1], sys.argv[2], sys.argv[3]
+body = io.open(path, encoding="utf-8").read()
+new = io.open(content_path, encoding="utf-8").read().strip()
+pattern = re.compile(
+    r"<!-- %s:begin -->.*?<!-- %s:end -->" % (re.escape(marker), re.escape(marker)),
+    re.S,
+)
+if not pattern.search(body):
+    sys.exit(f"{path}: '{marker}' markers are malformed")
+io.open(path, "w", encoding="utf-8").write(
+    pattern.sub(lambda _m: f"<!-- {marker}:begin -->{new}<!-- {marker}:end -->", body)
+)
+PY
+}

@@ -1,6 +1,6 @@
 name: Publish trigger (consumer-library-ai-bridge epic AC #24)
 
-# Auto-trigger publish.yml when the dev branch receives an auth-*/ change.
+# Auto-trigger publish.yml when the dev branch receives a cmp-*/ change.
 # Delegates to mbl-actionhub's publish-on-development-push.yml@v1.8.0+ reusable workflow
 # for the debounce + dispatch logic.
 #
@@ -10,9 +10,13 @@ on:
   push:
     branches: [dev]
     paths:
-      - 'auth-*/**'
+      # Modules are cmp-* — `auth-*/**` was a leftover from before the rename and could never
+      # match, so a source change would silently never trigger a publish.
+      - 'cmp-*/**'
       - 'libs.versions.toml'
       - 'gradle/libs.versions.toml'
+      # The version SoT. A release is usually exactly this line changing.
+      - 'gradle.properties'
   workflow_dispatch:
 
 jobs:

@@ -101,6 +101,45 @@ gen_api_surface() {
   } > "$TMP/api.md"
 }
 
+# Badges. The VERSION badge is generated from gradle.properties — the same property every
+# module builds against — so a version bump cannot leave a stale number in a badge. The Maven
+# Central badge is live from the registry and will read "not found" until the first publish;
+# that is honest rather than misleading.
+gen_badges() {
+  local scope="${1:-root}" module="${2:-cmp-supabase-auth}"
+  # LICENSE lives at the REPO ROOT, so a module README one level down needs `../`.
+  local up=""
+  [ "$scope" = "module" ] && up="../"
+  # The version badge links to gradle.properties on GitHub, ABSOLUTELY — not relatively. The
+  # file is the version SoT but it is not staged into the docs site, so a relative link 404s
+  # there while resolving fine in the repo view. An absolute blob URL works from both.
+  {
+    printf '[![Version](https://img.shields.io/badge/version-%s-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)\n' "$VERSION"
+    printf '[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/%s?label=maven%%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/%s)\n' "$module" "$module"
+    printf '[![Kotlin](https://img.shields.io/badge/Kotlin-%s-blue.svg?logo=kotlin)](https://kotlinlang.org)\n' "$(lib_dep_version kotlin)"
+    if [ "$scope" = "root" ] || [ "$module" = "cmp-supabase-auth-compose" ]; then
+      printf '[![Compose Multiplatform](https://img.shields.io/badge/Compose-%s-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)\n' "$(lib_dep_version compose-multiplatform)"
+    fi
+    printf '[![License](https://img.shields.io/badge/License-Apache%%202.0-green.svg)](%sLICENSE)\n' "$up"
+  } > "$TMP/badges-$scope-$module.md"
+}
+
+# Bare version string, for places that need the number rather than a badge.
+gen_version() {
+  printf '%s' "$VERSION" > "$TMP/version.md"
+}
+
+gen_module_install() {
+  local m="$1"
+  {
+    echo '```kotlin'
+    echo 'dependencies {'
+    echo "    implementation(\"io.github.mobilebytelabs:$m:$VERSION\")"
+    echo '}'
+    echo '```'
+  } > "$TMP/module-install-$m.md"
+}
+
 gen_module_targets() {
   local m="$1"
   {
@@ -113,6 +152,7 @@ gen_module_targets() {
 # ── apply ────────────────────────────────────────────────────────────────────────────────────
 
 gen_modules_table; gen_install; gen_targets_table; gen_deps_table; gen_api_surface
+gen_version; gen_badges root cmp-supabase-auth
 
 # `--check` runs the generator against a COPY and diffs. It must never touch the working tree:
 # an earlier version wrote in place and then `git checkout --` to undo, which silently destroyed
@@ -153,10 +193,18 @@ lib_replace_block TARGET_MATRIX.md     "docs-gen:targets"   "$TMP/targets.md"
 lib_replace_block docs/api-reference.md "docs-gen:api"      "$TMP/api.md"
 lib_replace_block docs/getting-started.md "docs-gen:install" "$TMP/install.md"
 lib_replace_block docs/home.md         "docs-gen:install"   "$TMP/install.md"
+lib_replace_block README.md            "docs-gen:badges"    "$TMP/badges-root-cmp-supabase-auth.md"
+lib_replace_inline docs/_coverpage.md  "docs-gen:version"   "$TMP/version.md"
 
 for m in $(lib_modules); do
   gen_module_targets "$m"
+  gen_module_install "$m"
+  gen_badges "module" "$m"
   lib_replace_block "$m/README.md" "docs-gen:targets" "$TMP/module-targets-$m.md"
+  lib_replace_block "$m/README.md" "docs-gen:install" "$TMP/module-install-$m.md"
+  lib_replace_block "$m/README.md" "docs-gen:badges"  "$TMP/badges-module-$m.md"
+  # DEVELOPMENT.md frontmatter carries the version too; the coherence workflow reads it.
+  lib_replace_inline "$m/DEVELOPMENT.md" "docs-gen:version" "$TMP/version.md"
 done
 
 echo "✅ docs refreshed from the build (version $VERSION)"
