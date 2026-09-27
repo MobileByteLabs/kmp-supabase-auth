@@ -5,8 +5,8 @@
 <!-- docs-gen:install:begin -->
 ```kotlin
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.0")  // headless
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.0")  // Compose UI (optional)
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.1")  // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.1")  // Compose UI (optional)
 }
 ```
 <!-- docs-gen:install:end -->

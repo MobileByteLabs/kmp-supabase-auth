@@ -50,6 +50,17 @@ jobs:
       # shippable code (cmp-*/src, the version, the catalog) arrives with a changelog entry, so
       # the release section is written continuously rather than reconstructed from git log at
       # release time. Docs/CI-only PRs are exempt automatically.
+      # Configures the real publish task under the SAME condition CI uses — the publish workflow
+      # appends SONATYPE_HOST=CENTRAL_PORTAL to gradle.properties before invoking Gradle. Without
+      # this, a publish-only configuration error is invisible until a release is cut: `./gradlew
+      # build` never configures the publish task, so v0.1.0 failed with "The value for this
+      # property is final and cannot be changed any further" after every local check was green.
+      # --dry-run configures without uploading, so it needs no credentials.
+      - name: Publish task configures (release dry-run)
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralRepository --dry-run \
+            -PSONATYPE_HOST=CENTRAL_PORTAL
+
       - name: Every shipped version has its changelog section
         run: |
           set -euo pipefail

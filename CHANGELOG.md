@@ -14,6 +14,26 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 Nothing yet.
 
+## [0.1.1] - 2026-09-27
+
+**The first version actually published to Maven Central.** `0.1.0` was tagged and released on
+GitHub but never produced an artifact: the publish job failed at configuration time, before any
+upload. Nothing was ever available at `0.1.0`, so this release carries the full library described
+under `[0.1.0]` below, plus the two fixes that made publishing possible.
+
+### Fixed
+
+- The Maven Central publish failed at configuration with "The value for this property is final
+  and cannot be changed any further". The publish workflow appends `SONATYPE_HOST=CENTRAL_PORTAL`
+  to `gradle.properties`, and the build file also called `publishToMavenCentral()`, so the host
+  was configured twice. The call is now skipped when that property is present, and kept for
+  manual publishing. `./gradlew build` never configures the publish task, which is why every
+  local and PR check was green while the release could not publish — a CI dry-run of the publish
+  task now runs on every PR.
+- `release-notes.yml` passed `fail-on-missing`, but the pinned reusable workflow declares
+  `fail-when-missing`. An unknown input fails a reusable workflow at startup, so the v0.1.0
+  release was created with no changelog attached.
+
 ## [0.1.0] - 2026-09-27
 
 First release. Supabase authentication for Kotlin Multiplatform, published as two independently
@@ -61,5 +81,6 @@ consumable modules.
 - Native Google on iOS additionally requires the consuming iOS app to add `GoogleSignIn-iOS` 9.0.0
   via SPM. That is an Xcode-project dependency this library cannot supply.
 
-[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.1
 [0.1.0]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.0

@@ -70,7 +70,11 @@ if ! git rev-parse --verify --quiet "$SINCE" >/dev/null; then
   exit 1
 fi
 
-CHANGED="$(git diff --name-only "$SINCE"...HEAD)"
+# TWO dots, deliberately. `A...HEAD` diffs from the MERGE BASE, which a shallow CI checkout does
+# not have — it fails with "fatal: ...: no merge base" (exit 128), as this gate did on PR #14.
+# GitHub already sets `pull_request.base.sha` to the commit the PR is based on, so a plain
+# two-dot diff against it is both correct and safe on a depth=1 clone.
+CHANGED="$(git diff --name-only "$SINCE..HEAD")"
 
 # Only code that actually ships to a consumer demands a note. Docs, CI and build-logic changes
 # are real work but not something a release reader needs to be told about.

@@ -207,7 +207,17 @@ mavenPublishing {
             sourcesJar = true,
         ),
     )
-    publishToMavenCentral()
+    // NOT called unconditionally: the mbl-actionhub publish workflow appends
+    // `SONATYPE_HOST=CENTRAL_PORTAL` to gradle.properties before invoking Gradle, and the
+    // vanniktech plugin finalizes the host from that property. Calling publishToMavenCentral()
+    // as well then fails configuration with "The value for this property is final and cannot be
+    // changed any further" — which is what broke the v0.1.0 publish (run 36303648285) while
+    // every local build stayed green, because no local build runs the publish task.
+    //
+    // Kept for manual/local publishing, where nothing sets the property.
+    if (providers.gradleProperty("SONATYPE_HOST").orNull == null) {
+        publishToMavenCentral()
+    }
     signAllPublications()
 
     coordinates(group.toString(), "cmp-supabase-auth", version.toString())

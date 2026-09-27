@@ -28,9 +28,15 @@ jobs:
       contents: write
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}
-      # `fail-on-missing` defaults to FALSE upstream, which means a release whose version has no
+      # `fail-when-missing` defaults to FALSE upstream, which means a release whose version has no
       # CHANGELOG.md section is enriched with nothing and the job still goes green — the release
       # ships with only the auto-generated artifact list and nobody is told. Every release here
       # must carry its changelog section, so a missing one is an error, not a no-op.
-      fail-on-missing: true
+      #
+      # The name is `fail-when-missing` — verify against the PINNED ref before changing it:
+      #   gh api repos/MobileByteLabs/mbl-actionhub/contents/.github/workflows/\
+      #     release-notes-from-changelog.yml?ref=v1.9.1 --jq .content | base64 -d
+      # An unknown input makes a reusable workflow fail at STARTUP, which reports as
+      # `startup_failure` with no log to read — exactly how v0.1.0 shipped with no release notes.
+      fail-when-missing: true
     secrets: inherit

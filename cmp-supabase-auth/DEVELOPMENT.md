@@ -1,7 +1,7 @@
 ---
 module: cmp-supabase-auth
 artifact: io.github.mobilebytelabs:cmp-supabase-auth
-version: <!-- docs-gen:version:begin -->0.1.0<!-- docs-gen:version:end -->
+version: <!-- docs-gen:version:begin -->0.1.1<!-- docs-gen:version:end -->
 package: io.github.mobilebytelabs.supabaseauth
 api_tier: experimental
 last_reviewed: 2026-09-26
