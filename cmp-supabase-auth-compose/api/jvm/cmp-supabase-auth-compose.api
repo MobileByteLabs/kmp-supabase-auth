@@ -24,6 +24,22 @@ public final class io/github/mobilebytelabs/supabaseauth/compose/ProviderButtons
 	public static final fun GoogleSignInButton (Lkotlin/jvm/functions/Function0;Landroidx/compose/ui/Modifier;ZLandroidx/compose/runtime/Composer;II)V
 }
 
+public final class io/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath {
+	public static final field $stable I
+	public fun <init> (Lio/github/mobilebytelabs/supabaseauth/AuthProvider;Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;Ljava/lang/String;)V
+	public final fun component1 ()Lio/github/mobilebytelabs/supabaseauth/AuthProvider;
+	public final fun component2 ()Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lio/github/mobilebytelabs/supabaseauth/AuthProvider;Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;Ljava/lang/String;)Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;Lio/github/mobilebytelabs/supabaseauth/AuthProvider;Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getPath ()Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+	public final fun getProvider ()Lio/github/mobilebytelabs/supabaseauth/AuthProvider;
+	public final fun getReason ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class io/github/mobilebytelabs/supabaseauth/compose/RememberSignInKt {
 	public static final fun rememberAppleSignIn (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthClient;ZLkotlin/jvm/functions/Function1;Landroidx/compose/runtime/Composer;II)Lio/github/mobilebytelabs/supabaseauth/compose/SignInLauncher;
 	public static final fun rememberGoogleSignIn (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthClient;ZLkotlin/jvm/functions/Function1;Landroidx/compose/runtime/Composer;II)Lio/github/mobilebytelabs/supabaseauth/compose/SignInLauncher;
@@ -31,6 +47,37 @@ public final class io/github/mobilebytelabs/supabaseauth/compose/RememberSignInK
 
 public abstract interface class io/github/mobilebytelabs/supabaseauth/compose/SignInLauncher {
 	public abstract fun launch ()V
+}
+
+public final class io/github/mobilebytelabs/supabaseauth/compose/SignInPath : java/lang/Enum {
+	public static final field NATIVE Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+	public static final field WEB_FALLBACK Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+	public static fun values ()[Lio/github/mobilebytelabs/supabaseauth/compose/SignInPath;
+}
+
+public final class io/github/mobilebytelabs/supabaseauth/compose/SignInPathDiagnosticsKt {
+	public static final fun diagnoseSignInPaths (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;ZZLio/github/jan/supabase/PlatformTarget;)Lio/github/mobilebytelabs/supabaseauth/compose/SignInPathReport;
+	public static synthetic fun diagnoseSignInPaths$default (Lio/github/mobilebytelabs/supabaseauth/SupabaseAuthConfig;ZZLio/github/jan/supabase/PlatformTarget;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/compose/SignInPathReport;
+}
+
+public final class io/github/mobilebytelabs/supabaseauth/compose/SignInPathReport {
+	public static final field $stable I
+	public fun <init> (Lio/github/jan/supabase/PlatformTarget;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;)V
+	public final fun component1 ()Lio/github/jan/supabase/PlatformTarget;
+	public final fun component2 ()Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public final fun component3 ()Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public final fun copy (Lio/github/jan/supabase/PlatformTarget;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;)Lio/github/mobilebytelabs/supabaseauth/compose/SignInPathReport;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/supabaseauth/compose/SignInPathReport;Lio/github/jan/supabase/PlatformTarget;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/compose/SignInPathReport;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun format ()Ljava/lang/String;
+	public final fun getApple ()Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public final fun getGoogle ()Lio/github/mobilebytelabs/supabaseauth/compose/ProviderSignInPath;
+	public final fun getPlatform ()Lio/github/jan/supabase/PlatformTarget;
+	public final fun getWebFallbacks ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class io/github/mobilebytelabs/supabaseauth/compose/SupabaseAuthUiState {

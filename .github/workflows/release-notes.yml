@@ -28,4 +28,9 @@ jobs:
       contents: write
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}
+      # `fail-on-missing` defaults to FALSE upstream, which means a release whose version has no
+      # CHANGELOG.md section is enriched with nothing and the job still goes green — the release
+      # ships with only the auto-generated artifact list and nobody is told. Every release here
+      # must carry its changelog section, so a missing one is an error, not a no-op.
+      fail-on-missing: true
     secrets: inherit

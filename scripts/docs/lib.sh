@@ -8,15 +8,44 @@
 
 set -euo pipefail
 
+# A derivation that finds NOTHING must FAIL, never return empty.
+#
+# This is the bug that has bitten this repo three times. A stale `auth-*` glob left over from the
+# cmp-* rename made development-md-coherence.yml's discovery match zero files, so it passed on
+# every run while checking nothing at all. publish-trigger.yml could never fire for the same
+# reason. Both looked green the whole time.
+#
+# An empty result is not an answer — it means the question was asked wrong. Every helper below
+# routes its output through this, so a rename that breaks a pattern produces a loud failure
+# naming the pattern instead of a silently empty docs block.
+lib_require() {
+  local what="$1"; shift
+  local value; value="$(cat)"
+  if [ -z "${value//[[:space:]]/}" ]; then
+    {
+      echo "docs-gen: found NOTHING for ${what}"
+      echo "  Refusing to continue: an empty derivation would generate empty documentation"
+      echo "  blocks and report success. Fix the pattern, do not relax this check."
+      [ $# -gt 0 ] && printf '  %s\n' "$@"
+    } >&2
+    return 1
+  fi
+  printf '%s\n' "$value"
+}
+
 # The one version source. Every module reads the same property.
 lib_version() {
-  grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2
+  grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2 \
+    | lib_require "the library version" "Expected a 'supabaseauth.version=' line in gradle.properties."
 }
 
 # Published modules, in settings order. `sample-app` is excluded deliberately: it is proof, not
 # an artifact, and CI's `module-pattern: 'cmp-'` excludes it too.
 lib_modules() {
-  grep -oE '^include\(":cmp-[a-z-]+"\)' settings.gradle.kts | sed -e 's/^include("://' -e 's/")$//'
+  grep -oE '^include\(":cmp-[a-z-]+"\)' settings.gradle.kts | sed -e 's/^include("://' -e 's/")$//' \
+    | lib_require "published cmp-* modules" \
+        "settings.gradle.kts declares no include(\":cmp-…\") line." \
+        "If modules were renamed, update this pattern — do not let it match zero."
 }
 
 # Targets a module DECLARES, read from its build file rather than assumed.
@@ -27,22 +56,29 @@ lib_modules() {
 # because these build files explain at length which targets are ABSENT and why.
 lib_targets() {
   local module="$1" build="$1/build.gradle.kts"
-  [ -f "$build" ] || return 0
+  if [ ! -f "$build" ]; then
+    echo "docs-gen: $build does not exist, but $module is declared in settings.gradle.kts" >&2
+    return 1
+  fi
   sed -e 's://.*::' "$build" \
     | grep -oE '\b(jvm|androidLibrary|js|wasmJs|wasmWasi|iosX64|iosArm64|iosSimulatorArm64|macosX64|macosArm64|tvosX64|tvosArm64|tvosSimulatorArm64|watchosX64|watchosArm32|watchosArm64|watchosSimulatorArm64|watchosDeviceArm64|linuxX64|linuxArm64|mingwX64)\s*[({]' \
     | sed -e 's/[({]$//' -e 's/[[:space:]]*$//' \
     | sed -e 's/^androidLibrary$/android/' \
-    | sort -u
+    | sort -u \
+    | lib_require "declared targets of $module" "No kotlin target call found in $build."
 }
 
 lib_target_count() { lib_targets "$1" | wc -l | tr -d ' '; }
 
 # Public API types from the committed BCV baseline — the same artifact `apiCheck` gates on, so
 # the docs cannot claim a surface the build does not actually publish.
-lib_api_types() {
+_lib_api_types_raw() {
   local module="$1" api
   api="$(find "$module/api" -name '*.api' 2>/dev/null | head -1)"
-  [ -n "$api" ] || return 0
+  if [ -z "$api" ]; then
+    echo "docs-gen: no BCV .api baseline under $module/api — run ./gradlew apiDump" >&2
+    return 1
+  fi
   # Python rather than grep: BCV writes JVM descriptors (`io/github/.../AuthError$Cancelled`),
   # and matching `$`-nested names in an ERE is where the previous attempt produced
   # "empty (sub)expression". Nested classes are folded into their outer type — a reader wants
@@ -67,8 +103,15 @@ for t in sorted(types):
 PYAPI
 }
 
+# Wrap the heredoc above rather than piping inside it: a `| lib_require` on the python
+# invocation would swallow its exit status before pipefail could see it.
+lib_api_types() { _lib_api_types_raw "$@" | lib_require "public API types of $1" \
+    "The BCV baseline parsed to zero public types — the parser or the baseline is wrong."; }
+
 lib_dep_version() {
-  grep -E "^$1 = \"" gradle/libs.versions.toml | head -1 | cut -d'"' -f2
+  grep -E "^$1 = \"" gradle/libs.versions.toml | head -1 | cut -d'"' -f2 \
+    | lib_require "version catalog entry '$1'" \
+        "gradle/libs.versions.toml has no '$1 = \"…\"' line."
 }
 
 # Replace the content between `<!-- {marker}:begin -->` and `<!-- {marker}:end -->`.

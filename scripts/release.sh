@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# KmpToolkit — Unified Release Script
+# KMP Supabase Auth — Unified Release Script
 # =============================================================================
 # Single script for the complete release pipeline:
 #   1. Run quality gates (spotless + detekt + tests)
@@ -92,8 +92,18 @@ discover_modules() {
     done
 }
 
-get_version()  { grep -m1 'version = ' "$1/build.gradle.kts" | sed 's/.*"\(.*\)".*/\1/'; }
-get_artifact() { grep 'coordinates(' "$1/build.gradle.kts" | grep -oE '"kmp[^"]*"|"kmptoolkit[^"]*"' | head -1 | tr -d '"'; }
+# Reads the ONE version property, not the module build file. Every module here declares
+# `version = providers.gradleProperty("supabaseauth.version").get()`, so the old
+# `grep 'version = ' | extract-quoted` returned the literal string "supabaseauth.version" —
+# which this script would then have tagged as `vsupabaseauth.version`. The module argument is
+# accepted and ignored so the call sites read unchanged.
+get_version()  { grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2; }
+# Takes the artifact id straight out of `coordinates(...)` rather than pattern-matching a
+# name prefix. The template's version looked for "kmp*"/"kmptoolkit*", which matches nothing in
+# this repo (artifacts are cmp-*), so every banner printed `io.github.mobilebytelabs::0.1.0`
+# with an empty artifact id. The group and version args are unquoted expressions, so the first
+# quoted string on that line IS the artifact id.
+get_artifact() { grep -m1 'coordinates(' "$1/build.gradle.kts" | grep -oE '"[^"]+"' | head -1 | tr -d '"'; }
 get_group()    { echo "io.github.mobilebytelabs"; }
 
 # =============================================================================
@@ -161,7 +171,7 @@ cmd_local() {
 # =============================================================================
 cmd_release() {
     local github_repo
-    github_repo=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['github']['repo'])" 2>/dev/null || echo "MobileByteLabs/KmpToolkit")
+    github_repo=$(python3 -c "import json; print(json.load(open('$CREDS_FILE'))['github']['repo'])" 2>/dev/null || echo "MobileByteLabs/kmp-supabase-auth")
 
     # ── Resolve version ──────────────────────────────────────────
     local modules=($(discover_modules "$TARGET_MODULE"))
@@ -186,7 +196,7 @@ cmd_release() {
 
     echo ""
     echo -e "${CYAN}╔═══════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║${NC}  ${BOLD}KmpToolkit Release: $TAG${NC}"
+    echo -e "${CYAN}║${NC}  ${BOLD}KMP Supabase Auth Release: $TAG${NC}"
     echo -e "${CYAN}╚═══════════════════════════════════════════════════════════╝${NC}"
     echo ""
     for module in "${modules[@]}"; do
@@ -221,19 +231,28 @@ cmd_release() {
         exit 0
     fi
 
-    # ── Step 4: Unify ALL module versions ──────────────────────────
-    log_step "[4/8] Setting ALL modules to $VERSION..."
+    # ── Step 4: Set the version ────────────────────────────────────
+    # One property, not per-module literals: every module reads supabaseauth.version, so there
+    # is nothing to "unify" and rewriting build.gradle.kts would corrupt the provider call.
+    log_step "[4/8] Setting version to $VERSION..."
     local any_changed=false
-    for module in "${modules[@]}"; do
-        local mod_version=$(get_version "$module")
-        if [ "$mod_version" != "$VERSION" ]; then
-            sed -i '' "s/version = \"$mod_version\"/version = \"$VERSION\"/" "${module}/build.gradle.kts"
-            log_pass "$module: $mod_version → $VERSION"
-            any_changed=true
-        else
-            log_pass "$module: already $VERSION"
-        fi
-    done
+    local current_prop
+    current_prop="$(get_version "")"
+    if [ "$current_prop" != "$VERSION" ]; then
+        sed -i '' "s/^supabaseauth\.version=.*/supabaseauth.version=$VERSION/" gradle.properties
+        log_pass "gradle.properties: $current_prop → $VERSION"
+        any_changed=true
+    else
+        log_pass "gradle.properties: already $VERSION"
+    fi
+
+    # The release body is built from CHANGELOG.md by release-notes.yml. Tagging a version with
+    # no section there ships a release with no notes, so stop before the tag rather than after.
+    if ! bash .github/scripts/assert-changelog.sh; then
+        # log_fail exits, so the gate's own diagnostic has to be printed BEFORE it.
+        log_fail "Add the '## [$VERSION]' section to CHANGELOG.md, then re-run."
+    fi
+    log_pass "CHANGELOG has a section for $VERSION"
     if [ "$any_changed" = true ]; then
         git add -A
         git commit -m "chore: bump version to $VERSION" --no-verify
@@ -298,7 +317,7 @@ cmd_release() {
 
     # ── Step 8: Tag + push + GitHub Release ──────────────────────
     log_step "[8/8] Creating tag and pushing..."
-    git tag -a "$TAG" -m "KmpToolkit $TAG"
+    git tag -a "$TAG" -m "KMP Supabase Auth $TAG"
     git push origin "$TAG"
     log_pass "Tag $TAG pushed to origin"
 
@@ -347,7 +366,7 @@ cmd_release() {
 # =============================================================================
 cmd_help() {
     echo ""
-    echo -e "${BOLD}KmpToolkit — Release Script${NC}"
+    echo -e "${BOLD}KMP Supabase Auth — Release Script${NC}"
     echo ""
     echo "  Pipeline: quality → platforms → maven-local → version → merge → tag → CI"
     echo ""

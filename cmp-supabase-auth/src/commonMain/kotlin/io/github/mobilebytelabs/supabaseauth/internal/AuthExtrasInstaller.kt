@@ -24,9 +24,15 @@ internal fun buildAuthExtras(
     options: SupabaseAuthOptions,
 ): SupabaseClientBuilder.() -> Unit = {
     install(Auth) {
-        // The OAuth-redirect fallback (iOS ASWebAuthenticationSession, desktop system browser,
-        // macOS, JS/Wasm) needs the app's callback scheme + host so GoTrue can intercept the
+        // The OAuth-redirect fallback (iOS/macOS the EXTERNAL Safari app, desktop system
+        // browser, JS/Wasm) needs the app's callback scheme + host so GoTrue can intercept the
         // return URL. Harmless where the native path is taken instead.
+        //
+        // On iOS supabase-kt launches this with `UIApplication.sharedApplication.openURL(...)`
+        // (Auth/src/iosMain/.../openUrl.kt), NOT ASWebAuthenticationSession and NOT
+        // SFSafariViewController — verified against supabase-kt 3.8.0, whose shipped iOS klib
+        // declares no SafariServices and no WebKit dependency. The user leaves the app for
+        // Safari and returns through the scheme below.
         config.oauthScheme?.let { scheme = it }
         config.oauthHost?.let { host = it }
     }

@@ -24,16 +24,27 @@ SKIP_PREFIXES = ("http://", "https://", "mailto:", "#", "<", "data:")
 SKIP_CONTAINS = ("linear-gradient", "radial-gradient", "rgb(", "hsl(")
 
 
+# A site that contains nothing has no broken links, and a checker that says so is worse than no
+# checker: it reports success for a staging step that silently produced an empty directory. The
+# floors below are deliberately low — they assert the site was ASSEMBLED, not that it is complete.
+MIN_PAGES = 5
+MIN_LINKS = 20
+
+
 def main(site: str) -> int:
     missing = []
+    pages = 0
+    links = 0
     for root, _dirs, files in os.walk(site):
         for name in files:
             if not name.endswith(".md"):
                 continue
+            pages += 1
             page = os.path.join(root, name)
             with open(page, encoding="utf-8", errors="replace") as fh:
                 body = HTML_COMMENT.sub("", fh.read())
             for target in LINK.findall(body):
+                links += 1
                 if target.startswith(SKIP_PREFIXES) or not target:
                     continue
                 if any(token in target for token in SKIP_CONTAINS):
@@ -50,12 +61,18 @@ def main(site: str) -> int:
                 if not os.path.exists(resolved):
                     missing.append((os.path.relpath(page, site), target))
 
+    if pages < MIN_PAGES or links < MIN_LINKS:
+        print(f"::error::site looks unassembled — {pages} page(s), {links} link(s) "
+              f"(expected at least {MIN_PAGES} and {MIN_LINKS}). "
+              "Refusing to report success: nothing was actually checked.")
+        return 1
+
     for page, target in missing:
         print(f"MISSING: {target}  (from {page})")
     if missing:
         print(f"::error::{len(missing)} link(s) do not resolve in the assembled site")
         return 1
-    print("All relative links resolve in the assembled site.")
+    print(f"All {links} relative links across {pages} pages resolve in the assembled site.")
     return 0
 
 
