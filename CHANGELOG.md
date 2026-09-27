@@ -12,6 +12,10 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.3] - 2026-09-27
+
 ### Added
 
 - `AuthSession` — `user` + `isSignedIn` as one consistent value, exposed as
@@ -129,7 +133,8 @@ consumable modules.
 - Native Google on iOS additionally requires the consuming iOS app to add `GoogleSignIn-iOS` 9.0.0
   via SPM. That is an Xcode-project dependency this library cannot supply.
 
-[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.3
 [0.1.2]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.2
 [0.1.1]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.1
 [0.1.0]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.0
