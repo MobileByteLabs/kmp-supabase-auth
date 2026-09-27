@@ -8,10 +8,15 @@ The public API is **entirely commonMain**. No consumer writes a platform-conditi
 make sign-in work.
 
 <!-- docs-gen:install:begin -->
+Set `supabaseAuthVersion` to the version shown by the **Maven Central** badge above —
+that badge is read live from the registry and is always the latest published release.
+
 ```kotlin
+val supabaseAuthVersion = "<see the Maven Central badge>"
+
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.1")  // headless
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.1")  // Compose UI (optional)
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:$supabaseAuthVersion")  // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:$supabaseAuthVersion")  // Compose UI (optional)
 }
 ```
 <!-- docs-gen:install:end -->

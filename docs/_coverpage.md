@@ -1,6 +1,6 @@
 <!-- Cover page. Rendered full-screen before the docs; "Get started" scrolls into them. -->
 
-# KMP Supabase Auth <small><!-- docs-gen:version:begin -->0.1.1<!-- docs-gen:version:end --></small>
+# KMP Supabase Auth <small><!-- docs-gen:version:begin -->[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=latest&color=3ecf8e)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth)<!-- docs-gen:version:end --></small>
 
 > Supabase authentication for Kotlin Multiplatform.<br>
 > Native Google and Apple sign-in, anonymous sessions, **one Koin line**.

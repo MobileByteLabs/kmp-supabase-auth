@@ -38,25 +38,39 @@ VERSION="$(lib_version)"
 
 gen_modules_table() {
   {
-    echo "| Module | Artifact | Targets |"
-    echo "|---|---|---|"
+    echo "| Module | Artifact | Targets | Latest |"
+    echo "|---|---|---|---|"
     for m in $(lib_modules); do
-      echo "| [\`$m\`]($m/README.md) | \`io.github.mobilebytelabs:$m:$VERSION\` | $(lib_target_count "$m") |"
+      # Coordinates WITHOUT a version, plus the live badge — the same shape kmp-toolkit uses.
+      echo "| [\`$m\`]($m/README.md) | \`io.github.mobilebytelabs:$m\` | $(lib_target_count "$m") | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/$m?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/$m) |"
     done
-    echo "| \`sample-app\` | — (not published) | — |"
+    echo "| \`sample-app\` | — (not published) | — | — |"
   } > "$TMP/modules.md"
 }
 
+# NEVER writes a literal version into an install snippet.
+#
+# A pinned number in prose goes stale the moment the next release lands, and a reader who copies
+# it silently gets an old library. kmp-toolkit's README contains ZERO occurrences of its own
+# version for exactly this reason: the live Maven Central badge is the version source of truth,
+# because it is read from the registry at page load and can never be stale.
+#
+# So the snippet declares the version ONCE as a variable and points at the badge for its value.
 gen_install() {
   {
+    echo 'Set `supabaseAuthVersion` to the version shown by the **Maven Central** badge above —'
+    echo 'that badge is read live from the registry and is always the latest published release.'
+    echo
     echo '```kotlin'
+    echo 'val supabaseAuthVersion = "<see the Maven Central badge>"'
+    echo
     echo 'dependencies {'
     for m in $(lib_modules); do
       case "$m" in
         *-compose) note="  // Compose UI (optional)" ;;
         *)         note="  // headless" ;;
       esac
-      echo "    implementation(\"io.github.mobilebytelabs:$m:$VERSION\")$note"
+      echo "    implementation(\"io.github.mobilebytelabs:$m:\$supabaseAuthVersion\")$note"
     done
     echo '}'
     echo '```'
@@ -114,7 +128,6 @@ gen_badges() {
   # file is the version SoT but it is not staged into the docs site, so a relative link 404s
   # there while resolving fine in the repo view. An absolute blob URL works from both.
   {
-    printf '[![Version](https://img.shields.io/badge/version-%s-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)\n' "$VERSION"
     printf '[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/%s?label=maven%%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/%s)\n' "$module" "$module"
     printf '[![Kotlin](https://img.shields.io/badge/Kotlin-%s-blue.svg?logo=kotlin)](https://kotlinlang.org)\n' "$(lib_dep_version kotlin)"
     if [ "$scope" = "root" ] || [ "$module" = "cmp-supabase-auth-compose" ]; then
@@ -124,18 +137,27 @@ gen_badges() {
   } > "$TMP/badges-$scope-$module.md"
 }
 
-# Bare version string, for places that need the number rather than a badge.
+# Emits a LIVE badge, never the number. Any surface that wants to state "the current version"
+# gets something the registry answers for; nothing in the docs freezes a version string.
+# YAML frontmatter cannot hold a markdown badge, and the coherence workflow only requires the
+# `version` FIELD to exist, not to carry a number. So the field states where the real answer
+# lives instead of freezing a copy of it.
+gen_version_field() {
+  printf 'see Maven Central badge in README' > "$TMP/version-field.md"
+}
+
 gen_version() {
-  printf '%s' "$VERSION" > "$TMP/version.md"
+  printf '[![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=latest&color=3ecf8e)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth)' \
+    > "$TMP/version.md"
 }
 
 gen_module_install() {
   local m="$1"
   {
+    echo 'Version: see the **Maven Central** badge above (live from the registry).'
+    echo
     echo '```kotlin'
-    echo 'dependencies {'
-    echo "    implementation(\"io.github.mobilebytelabs:$m:$VERSION\")"
-    echo '}'
+    echo "    implementation(\"io.github.mobilebytelabs:$m:\$supabaseAuthVersion\")"
     echo '```'
   } > "$TMP/module-install-$m.md"
 }
@@ -152,7 +174,7 @@ gen_module_targets() {
 # ── apply ────────────────────────────────────────────────────────────────────────────────────
 
 gen_modules_table; gen_install; gen_targets_table; gen_deps_table; gen_api_surface
-gen_version; gen_badges root cmp-supabase-auth
+gen_version; gen_version_field; gen_badges root cmp-supabase-auth
 
 # `--check` runs the generator against a COPY and diffs. It must never touch the working tree:
 # an earlier version wrote in place and then `git checkout --` to undo, which silently destroyed
@@ -204,7 +226,7 @@ for m in $(lib_modules); do
   lib_replace_block "$m/README.md" "docs-gen:install" "$TMP/module-install-$m.md"
   lib_replace_block "$m/README.md" "docs-gen:badges"  "$TMP/badges-module-$m.md"
   # DEVELOPMENT.md frontmatter carries the version too; the coherence workflow reads it.
-  lib_replace_inline "$m/DEVELOPMENT.md" "docs-gen:version" "$TMP/version.md"
+  lib_replace_inline "$m/DEVELOPMENT.md" "docs-gen:version" "$TMP/version-field.md"
 done
 
 echo "✅ docs refreshed from the build (version $VERSION)"

@@ -61,7 +61,7 @@ lib_targets() {
     return 1
   fi
   sed -e 's://.*::' "$build" \
-    | grep -oE '\b(jvm|androidLibrary|js|wasmJs|wasmWasi|iosX64|iosArm64|iosSimulatorArm64|macosX64|macosArm64|tvosX64|tvosArm64|tvosSimulatorArm64|watchosX64|watchosArm32|watchosArm64|watchosSimulatorArm64|watchosDeviceArm64|linuxX64|linuxArm64|mingwX64)\s*[({]' \
+    | grep -oE '\b(jvm|android|androidLibrary|js|wasmJs|wasmWasi|iosX64|iosArm64|iosSimulatorArm64|macosX64|macosArm64|tvosX64|tvosArm64|tvosSimulatorArm64|watchosX64|watchosArm32|watchosArm64|watchosSimulatorArm64|watchosDeviceArm64|linuxX64|linuxArm64|mingwX64)\s*[({]' \
     | sed -e 's/[({]$//' -e 's/[[:space:]]*$//' \
     | sed -e 's/^androidLibrary$/android/' \
     | sort -u \

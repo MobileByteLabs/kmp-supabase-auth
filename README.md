@@ -8,7 +8,6 @@ Wire it into an app with **one Koin line**. Or three, one per architectural laye
 same thing, and a test proves it.
 
 <!-- docs-gen:badges:begin -->
-[![Version](https://img.shields.io/badge/version-0.1.1-3ecf8e.svg)](https://github.com/MobileByteLabs/kmp-supabase-auth/blob/dev/gradle.properties)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=maven%20central)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.4.20-blue.svg?logo=kotlin)](https://kotlinlang.org)
 [![Compose Multiplatform](https://img.shields.io/badge/Compose-1.12.0-blue.svg)](https://www.jetbrains.com/compose-multiplatform/)
@@ -34,10 +33,15 @@ that every app can depend on.
 ## Install
 
 <!-- docs-gen:install:begin -->
+Set `supabaseAuthVersion` to the version shown by the **Maven Central** badge above —
+that badge is read live from the registry and is always the latest published release.
+
 ```kotlin
+val supabaseAuthVersion = "<see the Maven Central badge>"
+
 dependencies {
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth:0.1.1")  // headless
-    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.1")  // Compose UI (optional)
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth:$supabaseAuthVersion")  // headless
+    implementation("io.github.mobilebytelabs:cmp-supabase-auth-compose:$supabaseAuthVersion")  // Compose UI (optional)
 }
 ```
 <!-- docs-gen:install:end -->
@@ -74,11 +78,11 @@ Console setup is the part that actually costs time:
 ## Modules
 
 <!-- docs-gen:modules:begin -->
-| Module | Artifact | Targets |
-|---|---|---|
-| [`cmp-supabase-auth`](cmp-supabase-auth/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth:0.1.1` | 17 |
-| [`cmp-supabase-auth-compose`](cmp-supabase-auth-compose/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth-compose:0.1.1` | 6 |
-| `sample-app` | — (not published) | — |
+| Module | Artifact | Targets | Latest |
+|---|---|---|---|
+| [`cmp-supabase-auth`](cmp-supabase-auth/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth` | 17 | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth) |
+| [`cmp-supabase-auth-compose`](cmp-supabase-auth-compose/README.md) | `io.github.mobilebytelabs:cmp-supabase-auth-compose` | 6 | [![](https://img.shields.io/maven-central/v/io.github.mobilebytelabs/cmp-supabase-auth-compose?label=%20)](https://central.sonatype.com/artifact/io.github.mobilebytelabs/cmp-supabase-auth-compose) |
+| `sample-app` | — (not published) | — | — |
 <!-- docs-gen:modules:end -->
 
 Target counts are **measured** against Maven Central, not inferred — see

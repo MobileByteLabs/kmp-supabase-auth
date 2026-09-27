@@ -14,6 +14,24 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 Nothing yet.
 
+## [0.1.2] - 2026-09-27
+
+**The first version published to Maven Central.** `0.1.0` and `0.1.1` were both tagged but never
+produced an artifact — each publish failed during Gradle configuration, before any upload — so
+nothing was ever available at either. This release carries the full library described under
+`[0.1.0]` plus the fixes below.
+
+### Fixed
+
+- Publishing now matches `kmp-toolkit` exactly: the modules call neither `coordinates(...)` nor
+  `publishToMavenCentral()`, and `SONATYPE_HOST` / `SONATYPE_AUTOMATIC_RELEASE` are committed to
+  `gradle.properties`. `coordinates(...)` set the plugin's `version` after the publish workflow's
+  injected `VERSION_NAME` had finalized it, failing both the 0.1.0 and 0.1.1 publishes.
+- `androidLibrary { }` → `android { }`, matching kmp-toolkit and clearing the AGP deprecation.
+- Documentation no longer states the library version as a literal anywhere. Install snippets and
+  the module table point at the live Maven Central badge, which is read from the registry and
+  cannot go stale; a CI gate rejects any reintroduced literal.
+
 ## [0.1.1] - 2026-09-27
 
 **The first version actually published to Maven Central.** `0.1.0` was tagged and released on
@@ -81,6 +99,7 @@ consumable modules.
 - Native Google on iOS additionally requires the consuming iOS app to add `GoogleSignIn-iOS` 9.0.0
   via SPM. That is an Xcode-project dependency this library cannot supply.
 
-[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/MobileByteLabs/kmp-supabase-auth/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.2
 [0.1.1]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.1
 [0.1.0]: https://github.com/MobileByteLabs/kmp-supabase-auth/releases/tag/v0.1.0
