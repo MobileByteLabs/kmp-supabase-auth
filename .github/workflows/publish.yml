@@ -56,27 +56,14 @@ jobs:
       sonatype-host: 'CENTRAL_PORTAL'
       create-github-release: false          # release already exists — this workflow is triggered by it
 
-    # EXPLICIT MAPPING, not `secrets: inherit`.
+
+    # `inherit`, deliberately. Every credential this workflow needs already exists as an
+    # ORGANISATION secret on MobileByteLabs, under exactly these names:
+    #   GPG_KEY_CONTENTS · MAVEN_CENTRAL_USERNAME · MAVEN_CENTRAL_PASSWORD
+    #   SIGNING_KEY_ID   · SIGNING_PASSWORD       · GRADLE_PUBLISH_{KEY,SECRET}
+    # (verify: gh api repos/MobileByteLabs/kmp-supabase-auth/actions/organization-secrets)
     #
-    # The vault's alias registry is the SoT for secret NAMES, and its names differ from what this
-    # reusable workflow declares:
-    #     framework-maven-central-username -> CENTRAL_PORTAL_USERNAME   (workflow wants MAVEN_CENTRAL_USERNAME)
-    #     framework-maven-central-password -> CENTRAL_PORTAL_PASSWORD   (workflow wants MAVEN_CENTRAL_PASSWORD)
-    #     framework-gpg-signing-key        -> SIGNING_KEY               (workflow wants GPG_KEY_CONTENTS)
-    #     framework-gpg-signing-password   -> SIGNING_PASSWORD          (matches)
-    #     framework-gpg-signing-key-id     -> FRAMEWORK_GPG_SIGNING_KEY_ID (workflow wants SIGNING_KEY_ID)
-    #
-    # The key-id had no vault entry at all — the first publish failed partly on that. It is the
-    # last 8 chars of the signing key's long id (vanniktech's `signingInMemoryKeyId`), DERIVED
-    # from framework-gpg-signing-key rather than hand-entered, so the two can never disagree.
-    #
-    # `inherit` passes names through unchanged, so the workflow would read empty strings for
-    # three of five and fail deep inside the publish step as if the credentials were wrong.
-    # Mapping here keeps ONE copy of each value in the vault and renames only at the boundary.
-    secrets:
-      MAVEN_CENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
-      MAVEN_CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
-      GPG_KEY_CONTENTS:       ${{ secrets.SIGNING_KEY }}
-      SIGNING_PASSWORD:       ${{ secrets.SIGNING_PASSWORD }}
-      SIGNING_KEY_ID:         ${{ secrets.FRAMEWORK_GPG_SIGNING_KEY_ID }}
-      GH_TOKEN:               ${{ secrets.GITHUB_TOKEN }}
+    # Do NOT re-add repo-level copies or a rename mapping. A repo secret SHADOWS the org secret
+    # of the same name, so a stale copy silently signs releases with the wrong key while every
+    # job stays green — which is exactly what an earlier attempt here set up before it was caught.
+    secrets: inherit
