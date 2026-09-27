@@ -39,10 +39,31 @@ jobs:
       group-id: 'io.github.mobilebytelabs'
       artifact-id: 'cmp-supabase-auth'
       version: ${{ inputs.version || '' }}
+      # WITHOUT THIS the first publish cannot resolve a version at all. The resolver tries, in
+      # order: explicit input → gradle-properties-key → GitHub releases → Maven Central. On a
+      # library that has never shipped, the last two are empty by definition and the first is
+      # blank on an automatic trigger — so leaving this unset failed the `Resolve Version` job
+      # with "Could not resolve version from any source", skipping every publish step while the
+      # build itself was green.
+      #
+      # `supabaseauth.version` is this repo's single version SoT (gradle.properties); every
+      # module already reads it via providers.gradleProperty(...).
+      gradle-properties-key: 'supabaseauth.version'
       verify-against-maven: false           # set true once your library is on Maven Central
       bump-after-release: false
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'
       create-github-release: false          # release already exists — this workflow is triggered by it
+
+
+    # `inherit`, deliberately. Every credential this workflow needs already exists as an
+    # ORGANISATION secret on MobileByteLabs, under exactly these names:
+    #   GPG_KEY_CONTENTS · MAVEN_CENTRAL_USERNAME · MAVEN_CENTRAL_PASSWORD
+    #   SIGNING_KEY_ID   · SIGNING_PASSWORD       · GRADLE_PUBLISH_{KEY,SECRET}
+    # (verify: gh api repos/MobileByteLabs/kmp-supabase-auth/actions/organization-secrets)
+    #
+    # Do NOT re-add repo-level copies or a rename mapping. A repo secret SHADOWS the org secret
+    # of the same name, so a stale copy silently signs releases with the wrong key while every
+    # job stays green — which is exactly what an earlier attempt here set up before it was caught.
     secrets: inherit
