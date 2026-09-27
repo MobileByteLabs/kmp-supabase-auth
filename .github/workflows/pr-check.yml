@@ -36,6 +36,33 @@ jobs:
   # presupposes a cmp-observe dependency, whose published jvm artifact is compiled at Java 21
   # (class file 65). Taking it would force JDK 21 on every desktop consumer of cmp-supabase-auth, which
   # is too high a price for lifecycle hooks. Revisit if cmp-observe ships a lower-target jvm jar.
+  # Its own job, not a step in Docs Gate: that job is checkout-only with a 5-minute budget, so a
+  # Gradle task there has no JDK, no Gradle cache, and gets CANCELLED on timeout — which is how
+  # this gate failed to actually run on PR #15 while showing a red X and an empty log.
+  publish-config:
+    name: Publish task configures
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v6
+
+      # Configures the REAL publish task under the SAME condition CI uses: the publish workflow
+      # appends these three properties to gradle.properties before invoking Gradle. `./gradlew
+      # build` never configures the publish task, so a publish-only configuration error stays
+      # invisible until a release is cut — v0.1.0 and v0.1.1 both failed that way while every
+      # other check was green. --dry-run configures without uploading, so it needs no credentials.
+      - name: Publish task configures (release dry-run)
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralRepository --dry-run \
+            -PSONATYPE_HOST=CENTRAL_PORTAL \
+            -PSONATYPE_AUTOMATIC_RELEASE=true \
+            -PVERSION_NAME="$(grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2)"
+
   docs-gate:
     name: Docs Gate
     runs-on: ubuntu-latest
@@ -50,22 +77,6 @@ jobs:
       # shippable code (cmp-*/src, the version, the catalog) arrives with a changelog entry, so
       # the release section is written continuously rather than reconstructed from git log at
       # release time. Docs/CI-only PRs are exempt automatically.
-      # Configures the real publish task under the SAME condition CI uses — the publish workflow
-      # appends SONATYPE_HOST=CENTRAL_PORTAL to gradle.properties before invoking Gradle. Without
-      # this, a publish-only configuration error is invisible until a release is cut: `./gradlew
-      # build` never configures the publish task, so v0.1.0 failed with "The value for this
-      # property is final and cannot be changed any further" after every local check was green.
-      # --dry-run configures without uploading, so it needs no credentials.
-      - name: Publish task configures (release dry-run)
-        run: |
-          # ALL THREE properties the publish workflow appends to gradle.properties. Passing only
-          # SONATYPE_HOST made this gate pass while the real publish still failed on VERSION_NAME
-          # — a gate that reproduces part of a condition proves nothing about the rest.
-          ./gradlew publishAllPublicationsToMavenCentralRepository --dry-run \
-            -PSONATYPE_HOST=CENTRAL_PORTAL \
-            -PSONATYPE_AUTOMATIC_RELEASE=true \
-            -PVERSION_NAME="$(grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2)"
-
       - name: No hardcoded library version in docs
         run: bash .github/scripts/assert-no-hardcoded-version.sh
 
