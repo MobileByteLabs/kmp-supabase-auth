@@ -19,7 +19,7 @@ supabase = "3.8.0"
 # This is what caps cmp-supabase-auth at 8; see README "Target matrix".
 store = "5.1.0-beta01"
 
-koin = "4.1.1"
+koin = "4.2.2"
 
 
 # Code Quality
