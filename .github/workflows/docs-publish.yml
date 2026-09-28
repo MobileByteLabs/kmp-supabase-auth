@@ -163,7 +163,7 @@ jobs:
       # updating — with the run still reporting success. Verify with:
       #   GET /accounts/{id}/pages/projects/kmp-supabase-auth-docs -> .result.production_branch
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
