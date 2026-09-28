@@ -130,7 +130,7 @@ jobs:
       name: docs
       url: https://kmp-supabase-auth-docs.pages.dev
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: docs-site
           path: _site
