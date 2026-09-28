@@ -112,7 +112,7 @@ jobs:
       - name: Verify every relative link in the assembled site resolves
         run: python3 .github/scripts/assert-docs-links.py _site
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: docs-site
           path: _site
