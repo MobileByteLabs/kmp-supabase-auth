@@ -12,6 +12,15 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+### Added
+
+- `docs/INTEGRATE_KMP_TEMPLATE.md` — layer-by-layer guide for wiring the library into a
+  `kmp-project-template` fork (`core/network` → `core/store` → `core/data` → `feature/auth`),
+  written from a real migration rather than from the API surface. Covers the `SupabaseExtrasProvider`
+  seam, why `createSupabaseClient` must never be called, the three-state session model and the
+  `!isAuthenticated` predicate UI actually wants, the native-vs-web matrix with its silent
+  `googleWebClientId` fallback, and the device verification a compiling app does not prove.
+
 ### Changed
 
 - AGP `9.4.1` → `9.4.0`, matching `cappy` and `kmp-toolkit`. The library was the only repo in the
