@@ -9,6 +9,7 @@
   - [Overview](/docs/home.md)
   - [Install &amp; wire up](/docs/getting-started.md)
   - [Target matrix](/TARGET_MATRIX.md)
+  - [kmp-project-template integration](/docs/INTEGRATE_KMP_TEMPLATE.md)
 
 - Provider setup
   - [Google Sign-In](/docs/SETUP_GOOGLE.md)
