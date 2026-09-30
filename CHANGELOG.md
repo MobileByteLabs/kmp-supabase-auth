@@ -14,6 +14,14 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ### Added
 
+- `supabaseAuthInstall(config)` — everything the library installs into a Supabase client, as ONE
+  branch of a fork's `SupabaseExtrasProvider`, replacing the two-call
+  `supabaseAuthExtras` + `supabaseComposeAuthExtras` form every consumer had to write by hand and
+  get in the right order. It composes INTO the fork's provider rather than binding one: the
+  template resolves exactly one `SupabaseExtrasProvider` and a fork may branch it across several
+  access points, so a library-owned binding would collide (`DefinitionOverrideException`) and take
+  the extension point away from the only place that sees them all.
+
 - `docs/INTEGRATE_KMP_TEMPLATE.md` — layer-by-layer guide for wiring the library into a
   `kmp-project-template` fork (`core/network` → `core/store` → `core/data` → `feature/auth`),
   written from a real migration rather than from the API surface. Covers the `SupabaseExtrasProvider`

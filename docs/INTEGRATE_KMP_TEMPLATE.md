@@ -102,12 +102,7 @@ val ProjectNetworkModule = module {
     single<SupabaseExtrasProvider> {
         SupabaseExtrasProvider { id ->
             when (id) {
-                ACCESS_POINT -> {
-                    {
-                        supabaseAuthExtras(AuthConfig)(this)        // Auth
-                        supabaseComposeAuthExtras(AuthConfig)(this) // ComposeAuth: native Google/Apple
-                    }
-                }
+                ACCESS_POINT -> supabaseAuthInstall(AuthConfig) // Auth + ComposeAuth
                 else -> { {} }
             }
         }
@@ -115,10 +110,31 @@ val ProjectNetworkModule = module {
 }
 ```
 
-`supabaseAuthExtras` splits `redirectUrl` into the scheme/host GoTrue needs to intercept the
-callback. `supabaseComposeAuthExtras` installs `googleNativeLogin` **only when
-`googleWebClientId` is non-blank**, and `appleNativeLogin` unconditionally — see
-[Native vs web](#native-vs-web-know-which-you-shipped).
+`supabaseAuthInstall` is everything the library installs, as one branch: it splits `redirectUrl`
+into the scheme/host GoTrue needs to intercept the callback, installs `googleNativeLogin` **only
+when `googleWebClientId` is non-blank**, and installs `appleNativeLogin` unconditionally — see
+[Native vs web](#native-vs-web-know-which-you-shipped). Use `supabaseAuthExtras` +
+`supabaseComposeAuthExtras` separately only if you need Auth without the native providers.
+
+### Keep auth in ONE place
+
+The seam is the single place auth is wired, and the library composes **into** it rather than
+binding its own provider. The template resolves exactly one instance —
+`getOrNull<SupabaseExtrasProvider>()?.forId(id)` — and a fork may run several projects, so:
+
+```kotlin
+when (id) {
+    AUTH_ACCESS_POINT -> supabaseAuthInstall(AuthConfig)
+    ANALYTICS_POINT   -> { { install(Realtime) } }
+    else              -> { {} }
+}
+```
+
+A library that bound `single<SupabaseExtrasProvider>` itself would collide with that binding
+(Koin raises `DefinitionOverrideException` on a duplicate type) and take the extension point away
+from the one place that can see every access point. Name the config **`AuthConfig`**, not
+`<Project>SupabaseAuthConfig` — `SupabaseAuthConfig` already says which library it belongs to, and
+a project prefix makes the same integration read differently in every fork.
 
 ### 1b. Register the DI graph
 
