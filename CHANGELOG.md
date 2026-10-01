@@ -12,6 +12,8 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
 ### Added
 
 - `kmpSupabaseAuthInstall(config)` — everything the library installs into a Supabase client, as ONE

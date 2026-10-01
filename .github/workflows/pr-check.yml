@@ -63,23 +63,30 @@ jobs:
             -PSONATYPE_AUTOMATIC_RELEASE=true \
             -PVERSION_NAME="$(grep -E '^supabaseauth\.version=' gradle.properties | cut -d= -f2)"
 
-  docs-gate:
-    name: Docs Gate
+  # ── Docs: ONE job for every docs check a PR needs ────────────────────────────────────────────
+  # Previously FOUR separate PR entries — "Docs Gate" (pr-check), "Docs are current with the build"
+  # (docs-refresh), "Assemble site & verify links" (docs-publish), plus two deploy jobs that only
+  # ever render as "skipping" on a PR. Four checkouts and four queue waits to answer one question:
+  # are the docs correct for this change? They are merged here; the deploy jobs stay where they
+  # are, on push, where they belong.
+  docs:
+    name: Docs
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - name: Assert every module has complete docs with resolving links
+
+      - name: Every module has complete docs with resolving links
         run: bash .github/scripts/assert-docs-complete.sh
+
+      - name: No hardcoded library version in docs
+        run: bash .github/scripts/assert-no-hardcoded-version.sh
 
       # Runs on every PR, not just version bumps: the cheapest moment to write a release note is
       # while the change is still in review. `--since` additionally requires that a change to
       # shippable code (cmp-*/src, the version, the catalog) arrives with a changelog entry, so
       # the release section is written continuously rather than reconstructed from git log at
       # release time. Docs/CI-only PRs are exempt automatically.
-      - name: No hardcoded library version in docs
-        run: bash .github/scripts/assert-no-hardcoded-version.sh
-
       - name: Every shipped version has its changelog section
         run: |
           set -euo pipefail
@@ -87,6 +94,36 @@ jobs:
           # checkout@v7 is shallow by default, so the base commit is not present until fetched.
           git fetch --no-tags --depth=1 origin "$BASE" 2>/dev/null || git fetch --no-tags origin "${{ github.base_ref }}"
           bash .github/scripts/assert-changelog.sh --since "$BASE"
+
+      - name: Generated docs match the build
+        run: |
+          set -euo pipefail
+          chmod +x scripts/docs/*.sh
+          if ! bash scripts/docs/refresh.sh --check; then
+            {
+              echo "### 📚 Docs are out of step with the build"
+              echo
+              echo "This PR changes module targets, the version, the public API or the version"
+              echo "catalog without refreshing the derived documentation. Those blocks are"
+              echo "generated from build files, so they cannot be corrected by hand."
+              echo
+              echo '```bash'
+              echo 'bash scripts/docs/refresh.sh'
+              echo '```'
+              echo
+              echo "Prose outside the \`<!-- docs-gen:* -->\` markers is never touched."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "✅ generated docs match the build" >> "$GITHUB_STEP_SUMMARY"
+
+      # Staged with the SAME script the deploy path uses, so a link that resolves here resolves
+      # on the published site.
+      - name: Assemble site & verify every relative link resolves
+        run: |
+          set -euo pipefail
+          bash .github/scripts/stage-docs-site.sh _site
+          python3 .github/scripts/assert-docs-links.py _site
 
   # ── Kover coverage ───────────────────────────────────────────────────────────────────────
   # Separate job rather than an input to the reusable workflow above: ci-kmp-library.yml exposes
