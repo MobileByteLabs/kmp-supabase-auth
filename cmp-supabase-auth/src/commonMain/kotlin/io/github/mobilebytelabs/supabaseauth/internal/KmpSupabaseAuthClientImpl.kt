@@ -5,9 +5,9 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.status.SessionStatus
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map

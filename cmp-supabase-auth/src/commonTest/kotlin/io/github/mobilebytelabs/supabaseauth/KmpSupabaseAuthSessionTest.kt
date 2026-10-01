@@ -8,7 +8,8 @@ import kotlin.test.assertTrue
 
 class KmpSupabaseAuthSessionTest {
 
-    private val guest = KmpSupabaseAuthUser(id = "anon-1", provider = KmpSupabaseAuthProvider.ANONYMOUS, isAnonymous = true)
+    private val guest =
+        KmpSupabaseAuthUser(id = "anon-1", provider = KmpSupabaseAuthProvider.ANONYMOUS, isAnonymous = true)
     private val account = KmpSupabaseAuthUser(id = "u-1", email = "a@b.c", provider = KmpSupabaseAuthProvider.GOOGLE)
 
     @Test

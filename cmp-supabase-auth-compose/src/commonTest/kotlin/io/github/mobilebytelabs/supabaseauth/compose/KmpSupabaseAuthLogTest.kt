@@ -1,9 +1,9 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import io.github.mobilebytelabs.supabaseauth.testing.FakeKmpSupabaseAuthRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -36,7 +36,10 @@ class KmpSupabaseAuthLogTest {
         KmpSupabaseAuthLog.handler = null
         assertFalse(KmpSupabaseAuthLog.isEnabled)
         var built = false
-        KmpSupabaseAuthLog.log { built = true; "expensive" }
+        KmpSupabaseAuthLog.log {
+            built = true
+            "expensive"
+        }
         assertFalse(built, "the message lambda must not run when logging is off")
     }
 

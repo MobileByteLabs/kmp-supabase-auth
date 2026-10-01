@@ -1,13 +1,13 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
-import org.koin.compose.koinInject
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import kotlinx.coroutines.CoroutineScope
+import org.koin.compose.koinInject
 import kotlin.time.Duration
 
 /**
@@ -49,11 +49,14 @@ public fun rememberKmpSupabaseSignIn(
         watchdogScope = watchdogScope,
         onError = onError,
     )
+
     // ANONYMOUS is a REAL flow now — it was previously rejected here, which is what forced every
     // consumer to reach past this function to the repository for a guest session.
     KmpSupabaseAuthProvider.ANONYMOUS -> rememberKmpSupabaseGuestSignIn(scope = watchdogScope, onError = onError)
 
-    else -> remember(provider) { KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.ProviderRejected(provider)) } }
+    else -> remember(provider) {
+        KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.ProviderRejected(provider)) }
+    }
 }
 
 /**
@@ -113,8 +116,11 @@ public fun KmpSupabaseSignInButton(
         )
 
         KmpSupabaseAuthProvider.ANONYMOUS -> KmpSupabaseContinueAsGuestButton(
-            modifier = modifier, enabled = enabled, scope = scope,
-            onClick = onClick, onError = onError,
+            modifier = modifier,
+            enabled = enabled,
+            scope = scope,
+            onClick = onClick,
+            onError = onError,
         )
 
         // No interactive flow to render. Drawing nothing silently would leave a gap in the layout

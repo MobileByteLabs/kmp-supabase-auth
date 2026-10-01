@@ -48,7 +48,11 @@ class KmpSupabaseSignInTimeoutTest {
         val vm = KmpSupabaseAuthViewModel(FakeKmpSupabaseAuthRepository(), backgroundScope, signInTimeout = 30.seconds)
         vm.onSignInStarted()
         advanceTimeBy(29.seconds)
-        assertEquals(KmpSupabaseAuthPhase.InProgress, vm.state.value.phase, "fired too early — a real sheet may be open")
+        assertEquals(
+            KmpSupabaseAuthPhase.InProgress,
+            vm.state.value.phase,
+            "fired too early — a real sheet may be open",
+        )
     }
 
     /** The success path must not be clobbered by a late timeout. */
@@ -95,7 +99,12 @@ class KmpSupabaseSignInTimeoutTest {
 
     @Test
     fun infinite_disables_it() = runTest {
-        val vm = KmpSupabaseAuthViewModel(FakeKmpSupabaseAuthRepository(), backgroundScope, signInTimeout = Duration.INFINITE)
+        val vm =
+            KmpSupabaseAuthViewModel(
+                FakeKmpSupabaseAuthRepository(),
+                backgroundScope,
+                signInTimeout = Duration.INFINITE,
+            )
         vm.onSignInStarted()
         advanceTimeBy(600.seconds)
         assertEquals(KmpSupabaseAuthPhase.InProgress, vm.state.value.phase)

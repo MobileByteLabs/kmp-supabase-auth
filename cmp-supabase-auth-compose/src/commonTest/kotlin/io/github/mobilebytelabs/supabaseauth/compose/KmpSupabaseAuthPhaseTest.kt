@@ -21,7 +21,8 @@ class KmpSupabaseAuthPhaseTest {
         KmpSupabaseAuthViewModel(repo, TestScope(UnconfinedTestDispatcher()), isConfigured = configured)
 
     private val account = KmpSupabaseAuthUser(id = "u-1", email = "a@b.c", provider = KmpSupabaseAuthProvider.GOOGLE)
-    private val guest = KmpSupabaseAuthUser(id = "anon-1", provider = KmpSupabaseAuthProvider.ANONYMOUS, isAnonymous = true)
+    private val guest =
+        KmpSupabaseAuthUser(id = "anon-1", provider = KmpSupabaseAuthProvider.ANONYMOUS, isAnonymous = true)
 
     @Test
     fun starts_idle_and_offers_sign_in() {

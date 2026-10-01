@@ -12,26 +12,31 @@ without a regenerated baseline fails CI.
 <!-- docs-gen:api:begin -->
 **`cmp-supabase-auth`**
 
+- `FakeKmpSupabaseAuthRepository`
+- `KmpSupabaseAuth`
+- `KmpSupabaseAuthClient`
+- `KmpSupabaseAuthConfig`
 - `KmpSupabaseAuthError`
+- `KmpSupabaseAuthLog`
+- `KmpSupabaseAuthOptions`
 - `KmpSupabaseAuthProvider`
 - `KmpSupabaseAuthRepository`
 - `KmpSupabaseAuthSession`
 - `KmpSupabaseAuthSessionStore`
 - `KmpSupabaseAuthUser`
-- `FakeKmpSupabaseAuthRepository`
-- `KmpSupabaseAuth`
-- `KmpSupabaseAuthClient`
-- `KmpSupabaseAuthConfig`
-- `KmpSupabaseAuthOptions`
 
 **`cmp-supabase-auth-compose`**
 
+- `KmpSupabaseAppleButtonStyle`
+- `KmpSupabaseAuthPhase`
+- `KmpSupabaseAuthState`
+- `KmpSupabaseAuthUiState`
+- `KmpSupabaseAuthViewModel`
 - `KmpSupabaseProviderSignInPath`
+- `KmpSupabaseSignInAction`
 - `KmpSupabaseSignInLauncher`
 - `KmpSupabaseSignInPath`
 - `KmpSupabaseSignInPathReport`
-- `KmpSupabaseAuthUiState`
-- `KmpSupabaseAuthViewModel`
 <!-- docs-gen:api:end -->
 
 ## cmp-supabase-auth

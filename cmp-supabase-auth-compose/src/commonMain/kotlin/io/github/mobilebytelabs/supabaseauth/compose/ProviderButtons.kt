@@ -96,7 +96,10 @@ public fun KmpSupabaseGoogleSignInButton(
         onError = onError,
     )
     ProviderButton(
-        onClick = { onClick(); launcher.launch() },
+        onClick = {
+            onClick()
+            launcher.launch()
+        },
         enabled = enabled && client.isConfigured,
         height = height,
         container = FieldWhite,
@@ -154,7 +157,10 @@ public fun KmpSupabaseAppleSignInButton(
     val field = if (onBlack) MarkBlack else FieldWhite
     val ink = if (onBlack) FieldWhite else MarkBlack
     ProviderButton(
-        onClick = { onClick(); launcher.launch() },
+        onClick = {
+            onClick()
+            launcher.launch()
+        },
         enabled = enabled && client.isConfigured,
         height = height,
         container = field,

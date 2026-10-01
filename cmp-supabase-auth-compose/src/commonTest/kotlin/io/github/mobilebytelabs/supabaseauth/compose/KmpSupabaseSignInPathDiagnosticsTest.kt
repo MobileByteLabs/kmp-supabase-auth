@@ -1,8 +1,8 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import io.github.jan.supabase.PlatformTarget
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals

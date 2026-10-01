@@ -23,8 +23,7 @@ import kotlin.test.assertTrue
  */
 class KmpSupabaseAnonymousSessionTest {
 
-    private fun session(user: KmpSupabaseAuthUser?) =
-        KmpSupabaseAuthSession(user = user, isSignedIn = user != null)
+    private fun session(user: KmpSupabaseAuthUser?) = KmpSupabaseAuthSession(user = user, isSignedIn = user != null)
 
     @Test
     fun anAnonymousUserIsAGuestAndNotAuthenticated() {

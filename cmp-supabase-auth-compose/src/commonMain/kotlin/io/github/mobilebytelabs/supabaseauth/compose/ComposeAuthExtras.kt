@@ -55,9 +55,12 @@ public fun kmpSupabaseComposeAuthExtras(
         } else {
             KmpSupabaseAuthLog.log {
                 "install: GOOGLE native SKIPPED — " +
-                    if (!googleNative) "googleNative=false" 
-                    else "googleWebClientId is ${KmpSupabaseAuthLog.redacted(config.googleWebClientId)}" +
-                        " → sign-in will use the web OAuth fallback"
+                    if (!googleNative) {
+                        "googleNative=false"
+                    } else {
+                        "googleWebClientId is ${KmpSupabaseAuthLog.redacted(config.googleWebClientId)}" +
+                            " → sign-in will use the web OAuth fallback"
+                    }
             }
         }
         if (appleNative) {

@@ -2,13 +2,13 @@ package io.github.mobilebytelabs.supabaseauth.di
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.SupabaseClientBuilder
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthRepository
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthSessionStore
 import io.github.mobilebytelabs.supabaseauth.DefaultKmpSupabaseAuthRepository
 import io.github.mobilebytelabs.supabaseauth.DefaultKmpSupabaseAuthSessionStore
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthRepository
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthSessionStore
 import io.github.mobilebytelabs.supabaseauth.buildOptions
 import io.github.mobilebytelabs.supabaseauth.internal.KmpSupabaseAuthClientImpl
 import io.github.mobilebytelabs.supabaseauth.internal.buildAuthExtras

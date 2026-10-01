@@ -1,7 +1,6 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import androidx.compose.runtime.Composable
-import org.koin.compose.koinInject
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -11,14 +10,15 @@ import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithApple
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -172,7 +172,10 @@ private fun rememberSignInWithWatchdog(
 }
 
 /** Maps the plugin's result onto the provider-neutral taxonomy. Success is intentionally ignored. */
-private fun NativeSignInResult.reportFailure(provider: KmpSupabaseAuthProvider, onError: (KmpSupabaseAuthError) -> Unit) {
+private fun NativeSignInResult.reportFailure(
+    provider: KmpSupabaseAuthProvider,
+    onError: (KmpSupabaseAuthError) -> Unit,
+) {
     // Logged for EVERY branch, success included. A provider that returns nothing at all is
     // indistinguishable from one that was never launched, and that ambiguity is exactly what makes
     // a stuck "Signing in…" impossible to diagnose from the outside: silence here means the

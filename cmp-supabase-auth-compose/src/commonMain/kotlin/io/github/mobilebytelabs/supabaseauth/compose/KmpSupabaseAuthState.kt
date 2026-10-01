@@ -70,9 +70,7 @@ public data class KmpSupabaseAuthState(
  * in a preview or a test, where there is no graph.
  */
 @Composable
-public fun rememberKmpSupabaseAuthState(
-    repository: KmpSupabaseAuthRepository = koinInject(),
-): KmpSupabaseAuthState {
+public fun rememberKmpSupabaseAuthState(repository: KmpSupabaseAuthRepository = koinInject()): KmpSupabaseAuthState {
     // `session` is a StateFlow with a real current value, so collectAsState needs no initial —
     // which removes the other thing every call site was choosing differently and sometimes wrong
     // (an `initialValue = true` for isGuest renders a one-frame guest state for a signed-in user).
@@ -82,9 +80,7 @@ public fun rememberKmpSupabaseAuthState(
 
 /** [KmpSupabaseAuthState.hasNoAccount] alone, for a screen that needs only the predicate. */
 @Composable
-public fun rememberKmpSupabaseHasNoAccount(
-    repository: KmpSupabaseAuthRepository = koinInject(),
-): State<Boolean> {
+public fun rememberKmpSupabaseHasNoAccount(repository: KmpSupabaseAuthRepository = koinInject()): State<Boolean> {
     val state = rememberKmpSupabaseAuthState(repository)
     return remember(state.hasNoAccount) {
         object : State<Boolean> {

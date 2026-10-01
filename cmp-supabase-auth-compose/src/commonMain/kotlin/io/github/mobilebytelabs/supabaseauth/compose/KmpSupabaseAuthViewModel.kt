@@ -1,11 +1,11 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthRepository
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthSession
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
-import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -178,7 +178,11 @@ public class KmpSupabaseAuthViewModel(
         _state.value = _state.value.copy(
             // Dismissing the provider sheet is a decision, not a failure — back to Idle so the
             // screen offers the providers again instead of showing an error nobody caused.
-            phase = if (error is KmpSupabaseAuthError.Cancelled) KmpSupabaseAuthPhase.Idle else KmpSupabaseAuthPhase.Failed(error),
+            phase = if (error is KmpSupabaseAuthError.Cancelled) {
+                KmpSupabaseAuthPhase.Idle
+            } else {
+                KmpSupabaseAuthPhase.Failed(error)
+            },
         )
     }
 

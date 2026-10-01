@@ -1,12 +1,12 @@
 package io.github.mobilebytelabs.supabaseauth
 
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.withTimeout
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withTimeout
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * The data-layer surface a feature module consumes.
@@ -57,8 +57,10 @@ public interface KmpSupabaseAuthRepository {
  */
 private val GuestSessionTimeout = 10.seconds
 
-internal class DefaultKmpSupabaseAuthRepository(private val client: KmpSupabaseAuthClient, private val store: KmpSupabaseAuthSessionStore) :
-    KmpSupabaseAuthRepository {
+internal class DefaultKmpSupabaseAuthRepository(
+    private val client: KmpSupabaseAuthClient,
+    private val store: KmpSupabaseAuthSessionStore,
+) : KmpSupabaseAuthRepository {
 
     // Delegated, not re-derived: the store assigns all three in one place, so these cannot drift.
     override val session: StateFlow<KmpSupabaseAuthSession> = store.session
