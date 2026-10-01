@@ -20,23 +20,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthClient
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 
 /**
  * Drop-in login screen.
  *
  * Slot-based rather than configurable-by-flags: [header] and [footer] let an app brand it without
- * forking, and anything more bespoke should compose [GoogleSignInButton] / [AppleSignInButton] /
- * [ContinueAsGuestButton] against [SupabaseAuthViewModel] directly.
+ * forking, and anything more bespoke should compose [KmpSupabaseGoogleSignInButton] / [KmpSupabaseAppleSignInButton] /
+ * [KmpSupabaseContinueAsGuestButton] against [KmpSupabaseAuthViewModel] directly.
  *
  * [onSignedIn] fires from the SESSION, not from a provider callback — see
- * [SupabaseAuthViewModel]. That is what makes the screen correct on Android, where the native
+ * [KmpSupabaseAuthViewModel]. That is what makes the screen correct on Android, where the native
  * Google success callback often never arrives.
  */
 @Composable
-public fun SupabaseLoginScreen(
-    viewModel: SupabaseAuthViewModel,
-    client: SupabaseAuthClient,
+public fun KmpSupabaseLoginScreen(
+    viewModel: KmpSupabaseAuthViewModel,
+    client: KmpSupabaseAuthClient,
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit = {},
     footer: @Composable () -> Unit = {},
@@ -47,8 +47,8 @@ public fun SupabaseLoginScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    val google = rememberGoogleSignIn(client, onError = viewModel::onSignInFailed)
-    val apple = rememberAppleSignIn(client, onError = viewModel::onSignInFailed)
+    val google = rememberKmpSupabaseGoogleSignIn(client, onError = viewModel::onSignInFailed)
+    val apple = rememberKmpSupabaseAppleSignIn(client, onError = viewModel::onSignInFailed)
 
     LaunchedEffect(state.isSignedIn) {
         if (state.isSignedIn) onSignedIn()
@@ -69,7 +69,7 @@ public fun SupabaseLoginScreen(
             }
 
             if (showGoogle) {
-                GoogleSignInButton(
+                KmpSupabaseGoogleSignInButton(
                     onClick = {
                         viewModel.onSignInStarted()
                         google.launch()
@@ -80,7 +80,7 @@ public fun SupabaseLoginScreen(
             }
 
             if (showApple) {
-                AppleSignInButton(
+                KmpSupabaseAppleSignInButton(
                     onClick = {
                         viewModel.onSignInStarted()
                         apple.launch()
@@ -93,8 +93,11 @@ public fun SupabaseLoginScreen(
             if (showGuestOption) {
                 // Equal-weight, never buried: an app that offers a guest path should not make it
                 // feel like a failure state.
-                ContinueAsGuestButton(
-                    onClick = viewModel::continueAsGuest,
+                // onSignInStarted, NOT continueAsGuest: the button now creates the anonymous
+                // session itself, so calling the ViewModel's own guest path here would request
+                // TWO sessions per press. The ViewModel's job is reduced to the phase flip.
+                KmpSupabaseContinueAsGuestButton(
+                    onClick = viewModel::onSignInStarted,
                     enabled = !state.isLoading,
                 )
             }

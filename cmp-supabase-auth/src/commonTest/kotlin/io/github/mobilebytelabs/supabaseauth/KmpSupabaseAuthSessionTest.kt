@@ -1,19 +1,20 @@
 package io.github.mobilebytelabs.supabaseauth
 
-import io.github.mobilebytelabs.supabaseauth.testing.FakeAuthRepository
+import io.github.mobilebytelabs.supabaseauth.testing.FakeKmpSupabaseAuthRepository
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class AuthSessionTest {
+class KmpSupabaseAuthSessionTest {
 
-    private val guest = AuthUser(id = "anon-1", provider = AuthProvider.ANONYMOUS, isAnonymous = true)
-    private val account = AuthUser(id = "u-1", email = "a@b.c", provider = AuthProvider.GOOGLE)
+    private val guest =
+        KmpSupabaseAuthUser(id = "anon-1", provider = KmpSupabaseAuthProvider.ANONYMOUS, isAnonymous = true)
+    private val account = KmpSupabaseAuthUser(id = "u-1", email = "a@b.c", provider = KmpSupabaseAuthProvider.GOOGLE)
 
     @Test
     fun signed_out_is_neither_guest_nor_authenticated() {
-        val s = AuthSession.SignedOut
+        val s = KmpSupabaseAuthSession.SignedOut
         assertTrue(s.isSignedOut)
         assertFalse(s.isSignedIn)
         assertFalse(s.isGuest)
@@ -23,7 +24,7 @@ class AuthSessionTest {
     /** The distinction the two-boolean shape cannot express: a real session with no account. */
     @Test
     fun anonymous_is_signed_in_and_guest_but_not_authenticated() {
-        val s = AuthSession(user = guest, isSignedIn = true)
+        val s = KmpSupabaseAuthSession(user = guest, isSignedIn = true)
         assertTrue(s.isSignedIn)
         assertTrue(s.isGuest)
         assertFalse(s.isAuthenticated)
@@ -32,7 +33,7 @@ class AuthSessionTest {
 
     @Test
     fun provider_account_is_authenticated_and_not_guest() {
-        val s = AuthSession(user = account, isSignedIn = true)
+        val s = KmpSupabaseAuthSession(user = account, isSignedIn = true)
         assertTrue(s.isAuthenticated)
         assertFalse(s.isGuest)
         assertFalse(s.isSignedOut)
@@ -44,7 +45,7 @@ class AuthSessionTest {
      */
     @Test
     fun session_always_agrees_with_currentUser_and_isSignedIn() {
-        val repo = FakeAuthRepository()
+        val repo = FakeKmpSupabaseAuthRepository()
         listOf(null, guest, account, null, account).forEach { u ->
             repo.emitSession(u)
             assertEquals(u, repo.session.value.user, "user disagrees after emitting $u")
@@ -55,10 +56,10 @@ class AuthSessionTest {
 
     @Test
     fun sign_out_returns_the_session_to_signed_out() = kotlinx.coroutines.test.runTest {
-        val repo = FakeAuthRepository()
+        val repo = FakeKmpSupabaseAuthRepository()
         repo.emitSession(account)
         assertTrue(repo.session.value.isAuthenticated)
         repo.signOut()
-        assertEquals(AuthSession.SignedOut, repo.session.value)
+        assertEquals(KmpSupabaseAuthSession.SignedOut, repo.session.value)
     }
 }

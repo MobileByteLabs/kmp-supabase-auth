@@ -1,6 +1,8 @@
 package io.github.mobilebytelabs.supabaseauth
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,15 +23,15 @@ import kotlinx.coroutines.flow.onEach
  *    would re-derive state that is already being pushed, which is a second read path for one
  *    piece of state.
  */
-public interface AuthSessionStore {
-    public val user: StateFlow<AuthUser?>
+public interface KmpSupabaseAuthSessionStore {
+    public val user: StateFlow<KmpSupabaseAuthUser?>
     public val isSignedIn: StateFlow<Boolean>
 
     /**
      * [user] and [isSignedIn] as one value. Updated at the same instant as both, so a collector
      * can never observe a combination that did not occur.
      */
-    public val session: StateFlow<AuthSession>
+    public val session: StateFlow<KmpSupabaseAuthSession>
 
     /** Begin mirroring the client's session. Call once, eagerly, at graph construction. */
     public fun start(scope: CoroutineScope)
@@ -38,18 +40,41 @@ public interface AuthSessionStore {
     public suspend fun clear()
 }
 
-internal class DefaultAuthSessionStore(private val client: SupabaseAuthClient) : AuthSessionStore {
+internal class DefaultKmpSupabaseAuthSessionStore(
+    private val client: KmpSupabaseAuthClient,
+    // SELF-STARTING, and that is the whole point. `start()` is documented as "call once, eagerly at
+    // graph construction" — but `kmpSupabaseAuthStore()` built this and never called it, and neither did
+    // any consumer, because nothing forced them to. The result was silent and total: `session` sat at
+    // SignedOut for the life of the process while GoTrue was fully Authenticated, so sign-in appeared
+    // to hang forever. A module that returns an inert object is the defect; owning the subscription
+    // here removes the lifecycle a caller can forget.
+    //
+    // App-lifetime by design: this mirrors a push stream for as long as the graph exists, so there is
+    // no narrower scope to honour and nothing to cancel.
+    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+) : KmpSupabaseAuthSessionStore {
 
-    private val _user = MutableStateFlow<AuthUser?>(null)
-    override val user: StateFlow<AuthUser?> = _user.asStateFlow()
+    private val _user = MutableStateFlow<KmpSupabaseAuthUser?>(null)
+    override val user: StateFlow<KmpSupabaseAuthUser?> = _user.asStateFlow()
 
     private val _isSignedIn = MutableStateFlow(false)
     override val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
 
-    private val _session = MutableStateFlow(AuthSession.SignedOut)
-    override val session: StateFlow<AuthSession> = _session.asStateFlow()
+    private val _session = MutableStateFlow(KmpSupabaseAuthSession.SignedOut)
+    override val session: StateFlow<KmpSupabaseAuthSession> = _session.asStateFlow()
 
+    private var started = false
+
+    init {
+        start(scope)
+    }
+
+    // Idempotent: `start()` stays on the public interface, so a consumer following the old
+    // instruction must not create a SECOND collector — two subscriptions racing to assign the same
+    // three fields is exactly the torn read this type exists to prevent.
     override fun start(scope: CoroutineScope) {
+        if (started) return
+        started = true
         client.currentUser
             .onEach { value ->
                 // All three assigned together — that is what makes `session` trustworthy as the
@@ -57,7 +82,7 @@ internal class DefaultAuthSessionStore(private val client: SupabaseAuthClient) :
                 // reintroduce exactly the torn-read this type exists to prevent.
                 _user.value = value
                 _isSignedIn.value = value != null
-                _session.value = AuthSession(user = value, isSignedIn = value != null)
+                _session.value = KmpSupabaseAuthSession(user = value, isSignedIn = value != null)
             }
             .launchIn(scope)
     }
@@ -70,6 +95,6 @@ internal class DefaultAuthSessionStore(private val client: SupabaseAuthClient) :
         client.signOut()
         _user.value = null
         _isSignedIn.value = false
-        _session.value = AuthSession.SignedOut
+        _session.value = KmpSupabaseAuthSession.SignedOut
     }
 }

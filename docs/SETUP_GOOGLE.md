@@ -35,7 +35,7 @@ You need **up to three**, and they are not interchangeable.
 
 Copy the **Client ID** and **Client secret**. This client id is:
 
-- what you pass as `googleWebClientId` in `SupabaseAuthConfig`
+- what you pass as `googleWebClientId` in `KmpSupabaseAuthConfig`
 - what Android's Credential Manager uses as its `serverClientId`
 - what you paste into Supabase's Google provider config
 
@@ -82,7 +82,7 @@ plus certificate pair.
 myapp://login-callback
 ```
 
-This must match `SupabaseAuthConfig.redirectUrl` exactly. GoTrue refuses any redirect not on this
+This must match `KmpSupabaseAuthConfig.redirectUrl` exactly. GoTrue refuses any redirect not on this
 allowlist, and the resulting error does not name the allowlist as the cause.
 
 ## 4. Wire it into the app
@@ -90,7 +90,7 @@ allowlist, and the resulting error does not name the allowlist as the cause.
 Keep the client id out of source control — read it through BuildKonfig or an equivalent:
 
 ```kotlin
-SupabaseAuthConfig(
+KmpSupabaseAuthConfig(
     projectRef        = "your-project-ref",
     googleWebClientId = BuildKonfig.GOOGLE_OAUTH_WEB_CLIENT_ID,
     redirectUrl       = "myapp://login-callback",

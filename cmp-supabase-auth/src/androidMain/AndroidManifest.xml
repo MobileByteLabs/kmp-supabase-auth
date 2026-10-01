@@ -8,7 +8,7 @@
   back to the GoTrue OAuth redirect and opened a browser — with no intent-filter anywhere in the
   app to receive the callback. The flow was unfinishable, and nothing in the build said so.
 
-  The activity is OURS (SupabaseAuthCallbackActivity) — auth-kt ships no callback activity, only
+  The activity is OURS (KmpSupabaseAuthCallbackActivity) — auth-kt ships no callback activity, only
   `SupabaseClient.handleDeeplinks(intent)` for an app to call from its own activity. This wraps
   that call so no app has to.
 
@@ -23,7 +23,7 @@
 
     <application>
         <activity
-            android:name="io.github.mobilebytelabs.supabaseauth.SupabaseAuthCallbackActivity"
+            android:name="io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthCallbackActivity"
             android:exported="true"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.Translucent.NoTitleBar">

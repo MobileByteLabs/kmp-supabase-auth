@@ -3,9 +3,9 @@ package io.github.mobilebytelabs.supabaseauth
 /**
  * The whole answer to "who is using the app right now", as one value.
  *
- * [AuthRepository] exposes `currentUser` and `isSignedIn` separately, which is convenient for a
+ * [KmpSupabaseAuthRepository] exposes `currentUser` and `isSignedIn` separately, which is convenient for a
  * single `collectAsState` but lets a caller read them a frame apart and act on a pair that never
- * actually existed — signed-in with a null user, or the reverse. Collecting [AuthRepository.session]
+ * actually existed — signed-in with a null user, or the reverse. Collecting [KmpSupabaseAuthRepository.session]
  * gives one flow whose value is always internally consistent.
  *
  * Three states, not two. A consumer that models only "signed in or not" cannot tell an anonymous
@@ -16,9 +16,9 @@ package io.github.mobilebytelabs.supabaseauth
  * app preferences belong to the app, which already has a source of truth for them; a second copy
  * here would be a second answer that can disagree.
  */
-public data class AuthSession(
+public data class KmpSupabaseAuthSession(
     /** The signed-in identity, or null when nobody is signed in. */
-    public val user: AuthUser? = null,
+    public val user: KmpSupabaseAuthUser? = null,
     /** True while a session exists — anonymous or otherwise. */
     public val isSignedIn: Boolean = false,
 ) {
@@ -33,6 +33,6 @@ public data class AuthSession(
 
     public companion object {
         /** The pre-sign-in / signed-out value. */
-        public val SignedOut: AuthSession = AuthSession()
+        public val SignedOut: KmpSupabaseAuthSession = KmpSupabaseAuthSession()
     }
 }

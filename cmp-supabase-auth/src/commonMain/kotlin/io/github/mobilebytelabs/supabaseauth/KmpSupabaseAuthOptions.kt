@@ -9,13 +9,13 @@ import io.github.jan.supabase.SupabaseClientBuilder
  * client rather than building a second one — a second client carries no session, so every
  * RLS-gated call resolves no `auth.uid()` while compiling cleanly.
  */
-public class SupabaseAuthOptions internal constructor() {
+public class KmpSupabaseAuthOptions internal constructor() {
 
     internal var extraInstall: SupabaseClientBuilder.() -> Unit = {}
         private set
-    internal var userMapper: ((AuthUser) -> AuthUser)? = null
+    internal var userMapper: ((KmpSupabaseAuthUser) -> KmpSupabaseAuthUser)? = null
         private set
-    internal var onSessionChanged: ((AuthUser?) -> Unit)? = null
+    internal var onSessionChanged: ((KmpSupabaseAuthUser?) -> Unit)? = null
         private set
     internal var googleNativeEnabled: Boolean = true
         private set
@@ -28,12 +28,12 @@ public class SupabaseAuthOptions internal constructor() {
     }
 
     /** Post-process the mapped user — e.g. to derive a display name differently. */
-    public fun userMapper(block: (AuthUser) -> AuthUser) {
+    public fun userMapper(block: (KmpSupabaseAuthUser) -> KmpSupabaseAuthUser) {
         userMapper = block
     }
 
     /** Observe session transitions — e.g. to set an analytics user id. */
-    public fun onSessionChanged(block: (AuthUser?) -> Unit) {
+    public fun onSessionChanged(block: (KmpSupabaseAuthUser?) -> Unit) {
         onSessionChanged = block
     }
 
@@ -48,5 +48,5 @@ public class SupabaseAuthOptions internal constructor() {
     }
 }
 
-internal fun buildOptions(configure: SupabaseAuthOptions.() -> Unit): SupabaseAuthOptions =
-    SupabaseAuthOptions().apply(configure)
+internal fun buildOptions(configure: KmpSupabaseAuthOptions.() -> Unit): KmpSupabaseAuthOptions =
+    KmpSupabaseAuthOptions().apply(configure)

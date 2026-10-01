@@ -31,15 +31,9 @@ on:
       - 'cmp-*/DEVELOPMENT.md'
       - '.github/workflows/docs-publish.yml'
       - '.github/scripts/assert-docs-links.py'
-  pull_request:
-    paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'TARGET_MATRIX.md'
-      - 'cmp-*/README.md'
-      - 'cmp-*/DEVELOPMENT.md'
-      - '.github/workflows/docs-publish.yml'
-      - '.github/scripts/assert-docs-links.py'
+  # No pull_request trigger. The PR already assembles the site and verifies its links inside
+  # pr-check.yml's `docs` job, using the SAME .github/scripts/stage-docs-site.sh; building it a
+  # second time here only added a check row whose deploy half could never run on a PR.
   workflow_dispatch:
   # Invoked by docs-refresh.yml AFTER it lands regenerated content, so the site serves the
   # refreshed docs rather than the commit that preceded them.
@@ -60,54 +54,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Stage site
-        run: |
-          set -euo pipefail
-          # The site is an exact MIRROR of the repo's doc layout. That is deliberate: the docs
-          # reuse the repo's real Markdown, and mirroring means every relative link those files
-          # already contain resolves unchanged. Flattening to the site root was tried and broke
-          # 14 links, because `../TARGET_MATRIX.md` escapes the root.
-          mkdir -p _site/docs
-          # docsify's entry point + conventions belong at the SITE ROOT, not under docs/.
-          cp docs/index.html docs/_sidebar.md docs/_navbar.md docs/_coverpage.md _site/
-          # Authored pages keep their docs/ path.
-          for f in docs/*.md; do
-            case "$(basename "$f")" in _sidebar.md|_navbar.md|_coverpage.md) continue ;; esac
-            cp "$f" _site/docs/
-          done
-          # Root-level docs, at their repo paths.
-          cp README.md TARGET_MATRIX.md CONTRIBUTING.md _site/
-          [ -f LICENSE ] && cp LICENSE _site/
-          [ -f CODE_OF_CONDUCT.md ] && cp CODE_OF_CONDUCT.md _site/
-          # Per-module docs, at their repo paths.
-          #
-          # STAGED is counted rather than assumed. An unmatched `cmp-*/` glob leaves the literal
-          # string, every `[ -f ]` fails, the loop stages nothing and the step still exits 0 —
-          # the same stale-glob failure that made development-md-coherence.yml pass while
-          # checking zero files. The site would deploy silently missing every module page.
-          STAGED=0
-          for m in cmp-*/; do
-            [ -f "$m/README.md" ] || continue
-            mkdir -p "_site/$m"
-            cp "$m/README.md" "_site/$m/"
-            [ -f "$m/DEVELOPMENT.md" ] && cp "$m/DEVELOPMENT.md" "_site/$m/"
-            STAGED=$((STAGED + 1))
-          done
-          EXPECTED=$(grep -coE '^include\(":cmp-[a-z-]+"\)' settings.gradle.kts)
-          # The floor matters as much as the comparison: if BOTH the directories and the
-          # settings entries were renamed, STAGED and EXPECTED would agree at zero and this
-          # check would pass while staging an empty site.
-          if [ "$EXPECTED" -lt 1 ]; then
-            echo "::error::settings.gradle.kts declares no cmp-* module — the pattern here is stale"
-            exit 1
-          fi
-          if [ "$STAGED" -ne "$EXPECTED" ]; then
-            echo "::error::staged $STAGED module doc set(s) but settings.gradle.kts declares $EXPECTED"
-            exit 1
-          fi
-          echo "staged $STAGED module doc set(s)"
-          # Cloudflare Pages does not run Jekyll, so `.nojekyll` is not strictly required here —
-          # kept so the same _site/ can be served by GitHub Pages or `npx serve` unchanged.
-          touch _site/.nojekyll
+        run: bash .github/scripts/stage-docs-site.sh _site
 
       - name: Verify every relative link in the assembled site resolves
         run: python3 .github/scripts/assert-docs-links.py _site

@@ -12,7 +12,47 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
+### Added
+
+- `kmpSupabaseAuthInstall(config)` — everything the library installs into a Supabase client, as ONE
+  branch of a fork's `SupabaseExtrasProvider`, replacing the two-call
+  `kmpSupabaseAuthExtras` + `kmpSupabaseComposeAuthExtras` form every consumer had to write by hand and
+  get in the right order. It composes INTO the fork's provider rather than binding one: the
+  template resolves exactly one `SupabaseExtrasProvider` and a fork may branch it across several
+  access points, so a library-owned binding would collide (`DefinitionOverrideException`) and take
+  the extension point away from the only place that sees them all.
+
+- `docs/INTEGRATE_KMP_TEMPLATE.md` — layer-by-layer guide for wiring the library into a
+  `kmp-project-template` fork (`core/network` → `core/store` → `core/data` → `feature/auth`),
+  written from a real migration rather than from the API surface. Covers the `SupabaseExtrasProvider`
+  seam, why `createSupabaseClient` must never be called, the three-state session model and the
+  `!isAuthenticated` predicate UI actually wants, the native-vs-web matrix with its silent
+  `googleWebClientId` fallback, and the device verification a compiling app does not prove.
+
 ### Changed
+
+- **BREAKING — every public type and function now carries the `KmpSupabaseAuth*` / `kmpSupabaseAuth*`
+  prefix.** The library's domain types were previously bare (`AuthSession`, `AuthUser`,
+  `AuthRepository`, `AuthError`, `AuthPhase`, `AuthSessionStore`), which collides with the names an
+  app naturally gives its own auth layer. Measured on a real consumer: the SAME library type was
+  imported under THREE different aliases across four files (`as SupabaseAuth`,
+  `as SupabaseAuthRepository`, and again `as SupabaseAuth`) purely to dodge the clash. After this
+  change that consumer imports every symbol directly and declares no alias at all.
+
+  | before | after |
+  |---|---|
+  | `AuthSession` · `AuthUser` · `AuthError` · `AuthProvider` · `AuthPhase` | `KmpSupabaseAuthSession` · `KmpSupabaseAuthUser` · `KmpSupabaseAuthError` · `KmpSupabaseAuthProvider` · `KmpSupabaseAuthPhase` |
+  | `AuthRepository` · `AuthSessionStore` | `KmpSupabaseAuthRepository` · `KmpSupabaseAuthSessionStore` |
+  | `SupabaseAuthClient` · `SupabaseAuthConfig` · `SupabaseAuthLog` · `SupabaseAuthOptions` | `KmpSupabaseAuthClient` · `KmpSupabaseAuthConfig` · `KmpSupabaseAuthLog` · `KmpSupabaseAuthOptions` |
+  | `SupabaseAuthViewModel` · `SupabaseAuthUiState` | `KmpSupabaseAuthViewModel` · `KmpSupabaseAuthUiState` |
+  | `SupabaseSignInButton` · `GoogleSignInButton` · `AppleSignInButton` · `SignInLauncher` | `KmpSupabaseSignInButton` · `KmpSupabaseGoogleSignInButton` · `KmpSupabaseAppleSignInButton` · `KmpSupabaseSignInLauncher` |
+  | `rememberSignIn` · `rememberGoogleSignIn` · `rememberAppleSignIn` | `rememberKmpSupabaseSignIn` · `rememberKmpSupabaseGoogleSignIn` · `rememberKmpSupabaseAppleSignIn` |
+  | `supabaseAuthNetwork` · `supabaseAuthStore` · `supabaseAuthRepository` · `supabaseAuth` · `kmpSupabaseAuthInstall` | `kmpSupabaseAuthNetwork` · `kmpSupabaseAuthStore` · `kmpSupabaseAuthRepository` · `kmpSupabaseAuth` · `kmpSupabaseAuthInstall` |
+
+  Artifact coordinates are unchanged (`io.github.mobilebytelabs:cmp-supabase-auth`), as is the
+  package (`io.github.mobilebytelabs.supabaseauth`). Only the symbol names move.
 
 - AGP `9.4.1` → `9.4.0`, matching `cappy` and `kmp-toolkit`. The library was the only repo in the
   org on 9.4.1, and a composite build runs both builds on the root's Gradle — a mismatched AGP

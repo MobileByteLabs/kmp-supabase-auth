@@ -35,7 +35,7 @@ The Compose module brings the headless one transitively (`api`), so a UI app can
 ## 2. Configure
 
 ```kotlin
-val authConfig = SupabaseAuthConfig(
+val authConfig = KmpSupabaseAuthConfig(
     projectRef        = "your-project-ref",
     googleWebClientId = BuildKonfig.GOOGLE_OAUTH_WEB_CLIENT_ID,
     redirectUrl       = "myapp://login-callback",
@@ -63,8 +63,8 @@ single<SupabaseExtrasProvider> {
         when (id) {
             authConfig.projectRef -> {
                 {
-                    supabaseAuthExtras(authConfig)(this)         // Auth
-                    supabaseComposeAuthExtras(authConfig)(this)  // ComposeAuth (native sign-in)
+                    kmpSupabaseAuthExtras(authConfig)(this)         // Auth
+                    kmpSupabaseComposeAuthExtras(authConfig)(this)  // ComposeAuth (native sign-in)
                 }
             }
             else -> { {} }
@@ -81,19 +81,19 @@ is what lets `cmp-supabase-auth` reach 17 targets instead of 7 — see [Target m
 One line:
 
 ```kotlin
-includes(supabaseAuth(authConfig))
+includes(kmpSupabaseAuth(authConfig))
 ```
 
 …or one per layer, if you prefer each rung where it belongs:
 
 ```kotlin
-includes(supabaseAuthNetwork(authConfig))  // core/network
-includes(supabaseAuthStore())              // core/store
-includes(supabaseAuthRepository())         // core/data
-includes(supabaseAuthComposeModule())      // feature
+includes(kmpSupabaseAuthNetwork(authConfig))  // core/network
+includes(kmpSupabaseAuthStore())              // core/store
+includes(kmpSupabaseAuthRepository())         // core/data
+includes(kmpSupabaseAuthComposeModule())      // feature
 ```
 
-`supabaseAuth(config)` is *defined as* the first three, and a test asserts the binding sets are
+`kmpSupabaseAuth(config)` is *defined as* the first three, and a test asserts the binding sets are
 identical — the two forms cannot drift apart.
 
 **On kmp-project-template**, the client comes from a factory rather than a direct binding, so pass
@@ -101,7 +101,7 @@ the lookup:
 
 ```kotlin
 includes(
-    supabaseAuth(authConfig) {
+    kmpSupabaseAuth(authConfig) {
         get<SupabaseClientFactory>().requireClientFor(authConfig.projectRef).client
     },
 )
@@ -114,7 +114,7 @@ existing `AuthHeaderBridge` does the rest:
 
 ```kotlin
 single<AuthTokenSource> {
-    val repository = get<AuthRepository>()
+    val repository = get<KmpSupabaseAuthRepository>()
     AuthTokenSource { _ -> repository.accessTokenFlow }
 }
 ```
@@ -122,7 +122,7 @@ single<AuthTokenSource> {
 ## 6. Show the screen
 
 ```kotlin
-SupabaseLoginScreen(
+KmpSupabaseLoginScreen(
     viewModel = koinViewModel(),
     client = koinInject(),
     header = { YourLogo() },
@@ -133,20 +133,20 @@ SupabaseLoginScreen(
 Or compose your own from the parts:
 
 ```kotlin
-val google = rememberGoogleSignIn(client, onError = viewModel::onSignInFailed)
-GoogleSignInButton(onClick = { viewModel.onSignInStarted(); google.launch() })
-ContinueAsGuestButton(onClick = viewModel::continueAsGuest)
+val google = rememberKmpSupabaseGoogleSignIn(client, onError = viewModel::onSignInFailed)
+KmpSupabaseGoogleSignInButton(onClick = { viewModel.onSignInStarted(); google.launch() })
+KmpSupabaseContinueAsGuestButton(onClick = viewModel::continueAsGuest)
 ```
 
 !> **Never treat the provider callback as success.** On Android `NativeSignInResult.Success`
-frequently never fires even though the session landed. Observe `AuthRepository.isSignedIn`
-instead — `SupabaseAuthViewModel` already does.
+frequently never fires even though the session landed. Observe `KmpSupabaseAuthRepository.isSignedIn`
+instead — `KmpSupabaseAuthViewModel` already does.
 
 ## 7. Guest sessions
 
 ```kotlin
 viewModel.continueAsGuest()                       // anonymous session, RLS applies immediately
-rememberGoogleSignIn(client, linkIdentity = true) // upgrade, KEEPING the user id
+rememberKmpSupabaseGoogleSignIn(client, linkIdentity = true) // upgrade, KEEPING the user id
 ```
 
 `linkIdentity` preserves the id, so no guest data has to be migrated. It works on the same

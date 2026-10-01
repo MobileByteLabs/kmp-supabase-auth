@@ -31,7 +31,7 @@ import io.github.jan.supabase.auth.handleDeeplinks
  *
  * Not used by native Google on Android: Credential Manager never leaves the app.
  */
-internal class SupabaseAuthCallbackActivity : Activity() {
+internal class KmpSupabaseAuthCallbackActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

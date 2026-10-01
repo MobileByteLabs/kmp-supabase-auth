@@ -5,19 +5,19 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Apple
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.status.SessionStatus
-import io.github.mobilebytelabs.supabaseauth.AuthUser
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthClient
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
-internal class SupabaseAuthClientImpl(
+internal class KmpSupabaseAuthClientImpl(
     private val client: SupabaseClient,
-    private val options: SupabaseAuthOptions,
+    private val options: KmpSupabaseAuthOptions,
     override val isConfigured: Boolean = true,
-) : SupabaseAuthClient {
+) : KmpSupabaseAuthClient {
 
     override val raw: SupabaseClient?
         get() = if (isConfigured) client else null
@@ -25,7 +25,7 @@ internal class SupabaseAuthClientImpl(
     override val sessionStatus: Flow<SessionStatus>?
         get() = if (isConfigured) client.auth.sessionStatus else null
 
-    override val currentUser: Flow<AuthUser?>
+    override val currentUser: Flow<KmpSupabaseAuthUser?>
         get() = if (!isConfigured) {
             flowOf(null)
         } else {
@@ -41,15 +41,26 @@ internal class SupabaseAuthClientImpl(
             flowOf(false)
         }
 
-    private fun SessionStatus.toAuthUser(): AuthUser? {
+    private fun SessionStatus.toAuthUser(): KmpSupabaseAuthUser? {
         if (this !is SessionStatus.Authenticated) return null
         // A freshly-minted session's `user` is often NOT inflated — especially right after the
         // native id_token exchange. Email and identity metadata land on the client's cached
         // current user. Without this fallback a signed-in person renders with a blank name and
         // no email, which looks like a bug in the app rather than a race in the SDK.
         val raw = session.user ?: client.auth.currentUserOrNull() ?: return null
-        val anonymous = raw.appMetadata?.let { providerFrom(it, false) } == null &&
-            raw.email.isNullOrBlank() && raw.phone.isNullOrBlank()
+        // GoTrue's OWN flag, not an inference. The previous expression was
+        // `raw.appMetadata?.let { providerFrom(it, false) } == null && email.isBlank && phone.isBlank`,
+        // which could never be true: `providerFrom` always returns a provider (OTHER at worst), so
+        // the first clause only held when appMetadata was null — and an anonymous GoTrue user HAS
+        // app_metadata. Every anonymous session was therefore reported as NOT anonymous, which made
+        // `isGuest` false, `isAuthenticated` true, and a guest render as a signed-in account.
+        //
+        // Verified on device 2026-10-01: three anonymous users existed server-side
+        // (`select is_anonymous from auth.users` → true) while Settings showed "Signed in".
+        //
+        // The heuristic survives only as a fallback for a GoTrue that omits the field.
+        val anonymous = raw.isAnonymous
+            ?: (raw.email.isNullOrBlank() && raw.phone.isNullOrBlank())
         val mapped = mapAuthUser(
             id = raw.id,
             email = raw.email,

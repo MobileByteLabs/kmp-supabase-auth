@@ -13,7 +13,7 @@ package io.github.mobilebytelabs.supabaseauth
  * setup must still build and run, degrading to the OAuth-redirect path rather than throwing.
  * "Unconfigured" is a supported state, not an error.
  */
-public data class SupabaseAuthConfig(
+public data class KmpSupabaseAuthConfig(
     val projectRef: String,
     /**
      * Google Cloud **Web** client id — not the Android one and not the iOS one.

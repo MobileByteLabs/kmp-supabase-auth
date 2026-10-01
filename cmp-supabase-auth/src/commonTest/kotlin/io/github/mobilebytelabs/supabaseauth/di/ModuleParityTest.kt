@@ -1,6 +1,6 @@
 package io.github.mobilebytelabs.supabaseauth.di
 
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
 import org.koin.core.annotation.KoinInternalApi
 import org.koin.core.module.Module
 import kotlin.test.Test
@@ -14,26 +14,26 @@ import kotlin.test.assertTrue
 @OptIn(KoinInternalApi::class)
 class ModuleParityTest {
 
-    private val config = SupabaseAuthConfig(projectRef = "abcdefgh", googleWebClientId = "id")
+    private val config = KmpSupabaseAuthConfig(projectRef = "abcdefgh", googleWebClientId = "id")
 
     private fun Module.bindingKeys(): Set<String> =
         (listOf(this) + includedModules).flatMap { m -> m.mappings.keys.map { it.toString() } }.toSet()
 
     /**
-     * The dual-wiring promise: `supabaseAuth(config)` and the three per-rung includes must
+     * The dual-wiring promise: `kmpSupabaseAuth(config)` and the three per-rung includes must
      * produce the SAME binding set.
      *
      * Everything else about the two modes is a structural claim in a README; this test is what
-     * makes it true. If someone adds a binding to supabaseAuth() directly instead of to a rung,
+     * makes it true. If someone adds a binding to kmpSupabaseAuth() directly instead of to a rung,
      * this fails.
      */
     @Test
     fun allInOneModuleMatchesThePerRungModules() {
-        val allInOne = supabaseAuth(config).bindingKeys()
+        val allInOne = kmpSupabaseAuth(config).bindingKeys()
         val perRung = listOf(
-            supabaseAuthNetwork(config),
-            supabaseAuthStore(),
-            supabaseAuthRepository(),
+            kmpSupabaseAuthNetwork(config),
+            kmpSupabaseAuthStore(),
+            kmpSupabaseAuthRepository(),
         ).flatMap { it.bindingKeys() }.toSet()
 
         assertEquals(perRung, allInOne)
@@ -41,8 +41,8 @@ class ModuleParityTest {
 
     @Test
     fun everyRungContributesAtLeastOneBinding() {
-        assertTrue(supabaseAuthNetwork(config).bindingKeys().isNotEmpty())
-        assertTrue(supabaseAuthStore().bindingKeys().isNotEmpty())
-        assertTrue(supabaseAuthRepository().bindingKeys().isNotEmpty())
+        assertTrue(kmpSupabaseAuthNetwork(config).bindingKeys().isNotEmpty())
+        assertTrue(kmpSupabaseAuthStore().bindingKeys().isNotEmpty())
+        assertTrue(kmpSupabaseAuthRepository().bindingKeys().isNotEmpty())
     }
 }

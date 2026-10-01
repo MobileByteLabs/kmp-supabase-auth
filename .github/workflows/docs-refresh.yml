@@ -27,18 +27,10 @@ run-name: "📚 Docs refresh · ${{ github.event.pull_request.title || github.re
 # JDK, no Gradle, no network — so this job takes seconds and cannot be broken by a toolchain bump.
 
 on:
-  pull_request:
-    paths:
-      - 'cmp-*/build.gradle.kts'
-      - 'cmp-*/api/**'
-      - 'gradle.properties'
-      - 'gradle/libs.versions.toml'
-      - 'settings.gradle.kts'
-      - 'scripts/docs/**'
-      - 'README.md'
-      - 'TARGET_MATRIX.md'
-      - 'docs/**'
-      - '.github/workflows/docs-refresh.yml'
+  # NO pull_request trigger. Every job here is gated `!= 'pull_request'` — refreshing docs LANDS
+  # A COMMIT, which a PR (and especially a fork PR, with no write access) must not do. With the
+  # drift check moved into pr-check.yml's single `docs` job, a PR trigger left this workflow firing
+  # only to skip: two permanent "skipping" rows on every pull request, for zero work.
   push:
     branches: [dev]
     paths:
@@ -58,35 +50,9 @@ permissions:
   contents: read
 
 jobs:
-  check:
-    name: Docs are current with the build
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Verify generated docs match the build
-        run: |
-          set -euo pipefail
-          chmod +x scripts/docs/*.sh
-          if ! bash scripts/docs/refresh.sh --check; then
-            {
-              echo "### 📚 Docs are out of step with the build"
-              echo
-              echo "This PR changes module targets, the version, the public API or the version"
-              echo "catalog without refreshing the derived documentation. Those blocks are"
-              echo "generated from build files, so they cannot be corrected by hand."
-              echo
-              echo '```bash'
-              echo 'bash scripts/docs/refresh.sh'
-              echo '```'
-              echo
-              echo "Prose outside the \`<!-- docs-gen:* -->\` markers is never touched."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          echo "✅ generated docs match the build" >> "$GITHUB_STEP_SUMMARY"
-
+  # The PR-side drift check lives in pr-check.yml's single `docs` job — one checkout for every
+  # docs question a PR asks, instead of a separate entry per question. This workflow keeps only
+  # the push-side work: refresh, land, and publish.
   refresh:
     name: Refresh and land
     if: github.event_name != 'pull_request'
