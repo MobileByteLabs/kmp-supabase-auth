@@ -349,6 +349,91 @@ adb logcat -d | grep -iE "koin|NoBeanDefFound|InstanceCreationException"
 The `force-stop` is not optional: without it a capture shows the previous composition and you get a
 false pass.
 
+### The sign-in itself: verify it LIVE, both sides
+
+Compiling and resolving prove the graph. They say nothing about whether Google will hand you a
+credential — that turns on config in **two consoles**, and the failure mode is silent. Run:
+
+```bash
+/idea-auth --verify --target <ws>/<project>
+```
+
+It reads Google Cloud and your backend live and reports `GV-1..GV-8` with the exact fix for each
+failure. The checks that matter for Android, in the order they bite:
+
+| # | Link | Gets this wrong and… |
+|---|---|---|
+| GV-1 | `serverClientId` is the **Web** client id | the Android id was pasted instead → the exchange is rejected |
+| GV-3 | an **Android** OAuth client exists for your app id + **every** signing SHA-1 | Credential Manager returns nothing: no credential, no error, no callback — the app spins forever |
+| GV-4 | the backend lists the **Android** client id as an accepted audience | the sheet succeeds, then GoTrue rejects the id_token — `onResult = Success` with no session |
+| GV-5 | nonce handling matches the client | the exchange is rejected post-sheet |
+| GV-7 | `auth.identities` holds a `google` row | proves no exchange has ever completed, whatever the config claims |
+
+**The Web client and the Android client are both required and are not interchangeable.** The Web
+client is what you pass as `serverClientId` and what carries the redirect URI; the Android client is
+registered against `(package name, SHA-1)` and listed as an accepted audience. Neither alone works.
+
+**Register a SHA-1 for every certificate that will run native Google** — debug, upload, *and* Play
+App Signing. Play re-signs your upload, so a Play-track install can fail while your local build
+passes. Get the fingerprints from the keystores, never by hand:
+
+```bash
+keytool -list -v -alias androiddebugkey \
+  -keystore ~/.android/debug.keystore -storepass android | grep SHA1
+```
+
+### Apple: two audiences, and a secret with a shelf life
+
+Apple's checks are `AV-1..AV-9` in the same `--verify` run. Two of them have no Google equivalent,
+and both are things a one-time setup pass cannot catch:
+
+**The client secret expires.** It is an ES256 JWT and Apple caps its lifetime at **6 months**. A
+working Apple sign-in will break on a calendar date — no deploy, no code change, the provider still
+reads `enabled`, and every exchange returns `invalid_client`. `AV-5` reads the expiry and warns at 30
+days; re-minting is automatic (`/idea-auth` without `--verify`), so the only real failure mode is not
+looking. Worth running on a schedule, not just at setup.
+
+**Native iOS and the web fallback use different audiences.** Native sends your **bundle id**; the
+web/Android round-trip sends your **Services ID**. `external_apple_client_id` must list both,
+comma-separated. List one and it works on one platform family and fails on the other — so a green
+manual test on an iPhone says nothing about Android, and an iOS-only project can carry a broken
+Services ID indefinitely.
+
+| # | Link | Gets this wrong and… |
+|---|---|---|
+| AV-1/2 | App ID **and** Services ID carry `APPLE_ID_AUTH` | native iOS fails at `ASAuthorizationController` |
+| AV-3 | Services ID has the backend domain + return URL (console-only) | web fallback breaks; native unaffected |
+| AV-4 | backend lists **both** bundle id and Services ID | fails on exactly one platform family |
+| AV-5 | client secret unexpired | `invalid_client` on a date you did not choose |
+| AV-6 | secret claims match team / Services ID / key id | also `invalid_client` — indistinguishable from expiry without this check |
+
+On non-Apple platforms `signInWithFallback(AuthProvider.APPLE)` runs the GoTrue web round-trip, and
+on iOS it opens a **Safari View Controller** rather than an embedded WebView — which is what Apple's
+review guidance expects. Don't replace it with a custom WebView.
+
+### When it hangs on "Signing in…"
+
+Turn the library's own logging on first — it prints the decisions, never credentials:
+
+```kotlin
+if (BuildConfig.DEBUG) SupabaseAuthLog.handler = { Log.d("SupabaseAuth", it) }
+```
+
+Then read the trail:
+
+| What you see | What it means |
+|---|---|
+| `install: GOOGLE native (serverClientId=blank)` | the id never reached the config |
+| `startFlow()` then **nothing** | GV-3 — no Android client for this package + SHA-1 |
+| `onResult = Success`, no session follows | GV-4/GV-5 — the audience list or nonce check rejected the token |
+| `onResult = Error: …` | the provider's own reason is printed with the cause |
+| `TIMEOUT after 60s` | nothing came back at all; treat as GV-3 |
+
+Do **not** raise supabase-kt's own log level to `DEBUG` to chase this. It logs the entire
+`UserSession`, access and refresh tokens included, straight into your terminal and any log
+aggregator — a real credential leak that outlives the debugging session. `SupabaseAuthLog` exists
+precisely so you never have to.
+
 ---
 
 ## Related
