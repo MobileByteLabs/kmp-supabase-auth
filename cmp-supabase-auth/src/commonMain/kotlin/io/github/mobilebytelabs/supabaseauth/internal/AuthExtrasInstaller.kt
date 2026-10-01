@@ -2,8 +2,8 @@ package io.github.mobilebytelabs.supabaseauth.internal
 
 import io.github.jan.supabase.SupabaseClientBuilder
 import io.github.jan.supabase.auth.Auth
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
 
 /**
  * The block handed to the consumer's Supabase client builder. Installs Auth + ComposeAuth onto
@@ -14,14 +14,14 @@ import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
  * compiling cleanly the whole way.
  *
  * Installs `Auth` ONLY. The ComposeAuth plugin is installed by `cmp-supabase-auth-compose`'s
- * `supabaseComposeAuthExtras(...)`, because `compose-auth` is a Compose artifact and depending on
+ * `kmpSupabaseComposeAuthExtras(...)`, because `compose-auth` is a Compose artifact and depending on
  * it here would cut this module from 17 targets to 7. A consumer using the Compose module
  * composes both blocks; a headless consumer installs just this one and gets OAuth-redirect
  * sign-in on every platform.
  */
 internal fun buildAuthExtras(
-    config: SupabaseAuthConfig,
-    options: SupabaseAuthOptions,
+    config: KmpSupabaseAuthConfig,
+    options: KmpSupabaseAuthOptions,
 ): SupabaseClientBuilder.() -> Unit = {
     install(Auth) {
         // The OAuth-redirect fallback (iOS/macOS the EXTERNAL Safari app, desktop system

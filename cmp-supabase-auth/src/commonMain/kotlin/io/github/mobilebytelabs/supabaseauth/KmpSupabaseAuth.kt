@@ -9,7 +9,7 @@ package io.github.mobilebytelabs.supabaseauth
  * misconfigured setup before any network call. The client, session store and repository land on
  * top of this surface.
  */
-public object SupabaseAuth {
+public object KmpSupabaseAuth {
     /**
      * Validate a config, failing fast on the one condition no fallback can rescue.
      *
@@ -20,9 +20,9 @@ public object SupabaseAuth {
      * A missing provider id is deliberately NOT fatal: it degrades to the OAuth-redirect path,
      * and an app mid-way through console setup should still run.
      */
-    public fun validate(config: SupabaseAuthConfig): SupabaseAuthConfig {
+    public fun validate(config: KmpSupabaseAuthConfig): KmpSupabaseAuthConfig {
         require(config.isConfigured) {
-            "SupabaseAuthConfig.projectRef is blank or still a placeholder (\"${config.projectRef}\"). " +
+            "KmpSupabaseAuthConfig.projectRef is blank or still a placeholder (\"${config.projectRef}\"). " +
                 "Set it to your Supabase project ref — the library installs onto that project's " +
                 "existing client and cannot create one."
         }

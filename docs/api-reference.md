@@ -12,26 +12,26 @@ without a regenerated baseline fails CI.
 <!-- docs-gen:api:begin -->
 **`cmp-supabase-auth`**
 
-- `AuthError`
-- `AuthProvider`
-- `AuthRepository`
-- `AuthSession`
-- `AuthSessionStore`
-- `AuthUser`
-- `FakeAuthRepository`
-- `SupabaseAuth`
-- `SupabaseAuthClient`
-- `SupabaseAuthConfig`
-- `SupabaseAuthOptions`
+- `KmpSupabaseAuthError`
+- `KmpSupabaseAuthProvider`
+- `KmpSupabaseAuthRepository`
+- `KmpSupabaseAuthSession`
+- `KmpSupabaseAuthSessionStore`
+- `KmpSupabaseAuthUser`
+- `FakeKmpSupabaseAuthRepository`
+- `KmpSupabaseAuth`
+- `KmpSupabaseAuthClient`
+- `KmpSupabaseAuthConfig`
+- `KmpSupabaseAuthOptions`
 
 **`cmp-supabase-auth-compose`**
 
-- `ProviderSignInPath`
-- `SignInLauncher`
-- `SignInPath`
-- `SignInPathReport`
-- `SupabaseAuthUiState`
-- `SupabaseAuthViewModel`
+- `KmpSupabaseProviderSignInPath`
+- `KmpSupabaseSignInLauncher`
+- `KmpSupabaseSignInPath`
+- `KmpSupabaseSignInPathReport`
+- `KmpSupabaseAuthUiState`
+- `KmpSupabaseAuthViewModel`
 <!-- docs-gen:api:end -->
 
 ## cmp-supabase-auth
@@ -40,57 +40,57 @@ without a regenerated baseline fails CI.
 
 | Type | Purpose |
 |---|---|
-| `SupabaseAuthConfig` | `projectRef`, `googleWebClientId`, `googleIosClientId`, `appleServiceId`, `redirectUrl`; derived `hasGoogleNative`, `oauthScheme`, `oauthHost`, `isConfigured` |
-| `SupabaseAuthOptions` | `extraInstall {}`, `userMapper {}`, `onSessionChanged {}`, `googleNative(Boolean)`, `appleNative(Boolean)` |
-| `SupabaseAuth` | `validate(config)` — fails fast on a blank or placeholder `projectRef` |
+| `KmpSupabaseAuthConfig` | `projectRef`, `googleWebClientId`, `googleIosClientId`, `appleServiceId`, `redirectUrl`; derived `hasGoogleNative`, `oauthScheme`, `oauthHost`, `isConfigured` |
+| `KmpSupabaseAuthOptions` | `extraInstall {}`, `userMapper {}`, `onSessionChanged {}`, `googleNative(Boolean)`, `appleNative(Boolean)` |
+| `KmpSupabaseAuth` | `validate(config)` — fails fast on a blank or placeholder `projectRef` |
 
 ### Domain
 
 | Type | Purpose |
 |---|---|
-| `AuthUser` | `id`, `email`, `displayName`, `avatarUrl`, `provider`, `isAnonymous` |
-| `AuthProvider` | `GOOGLE`, `APPLE`, `ANONYMOUS`, `EMAIL`, `OTHER` |
-| `AuthError` | `Cancelled`, `Network`, `ProviderRejected`, `NotConfigured`, `Unknown` |
+| `KmpSupabaseAuthUser` | `id`, `email`, `displayName`, `avatarUrl`, `provider`, `isAnonymous` |
+| `KmpSupabaseAuthProvider` | `GOOGLE`, `APPLE`, `ANONYMOUS`, `EMAIL`, `OTHER` |
+| `KmpSupabaseAuthError` | `Cancelled`, `Network`, `ProviderRejected`, `NotConfigured`, `Unknown` |
 
-`AuthError.Cancelled` is **not** a failure — a person dismissing the provider sheet has not hit a
+`KmpSupabaseAuthError.Cancelled` is **not** a failure — a person dismissing the provider sheet has not hit a
 problem, and the ViewModel deliberately does not surface it.
 
 ### Layers
 
 | Type | Rung |
 |---|---|
-| `SupabaseAuthClient` | `core/network` — `sessionStatus`, `currentUser`, `isSignedIn`, `signInAnonymously`, `signInWith*Fallback`, `hasRestorableSession`, `currentAccessToken`, `signOut`, `raw` |
-| `AuthSessionStore` | `core/store` — `user`, `isSignedIn`, `start(scope)`, `clear()` |
-| `AuthRepository` | `core/data` — `currentUser`, `isSignedIn`, `accessTokenFlow`, `continueAsGuest`, `signInWithFallback`, `signOut`, `restoreSession`, `accessToken` |
+| `KmpSupabaseAuthClient` | `core/network` — `sessionStatus`, `currentUser`, `isSignedIn`, `signInAnonymously`, `signInWith*Fallback`, `hasRestorableSession`, `currentAccessToken`, `signOut`, `raw` |
+| `KmpSupabaseAuthSessionStore` | `core/store` — `user`, `isSignedIn`, `start(scope)`, `clear()` |
+| `KmpSupabaseAuthRepository` | `core/data` — `currentUser`, `isSignedIn`, `accessTokenFlow`, `continueAsGuest`, `signInWithFallback`, `signOut`, `restoreSession`, `accessToken` |
 
 ### DI
 
 | Function | Binds |
 |---|---|
-| `supabaseAuthExtras(config)` | the `Auth` install block |
-| `supabaseAuthNetwork(config, configure, clientProvider)` | `SupabaseAuthClient`, `SupabaseAuthOptions` |
-| `supabaseAuthStore()` | `AuthSessionStore` |
-| `supabaseAuthRepository()` | `AuthRepository` |
-| `supabaseAuth(config, …)` | all three above |
+| `kmpSupabaseAuthExtras(config)` | the `Auth` install block |
+| `kmpSupabaseAuthNetwork(config, configure, clientProvider)` | `KmpSupabaseAuthClient`, `KmpSupabaseAuthOptions` |
+| `kmpSupabaseAuthStore()` | `KmpSupabaseAuthSessionStore` |
+| `kmpSupabaseAuthRepository()` | `KmpSupabaseAuthRepository` |
+| `kmpSupabaseAuth(config, …)` | all three above |
 
 ### Testing
 
-`FakeAuthRepository` ships in the **main** artifact, not a test source set, so your app modules
+`FakeKmpSupabaseAuthRepository` ships in the **main** artifact, not a test source set, so your app modules
 can use it. Drive it with `emitSession(user)` to simulate GoTrue pushing a session.
 
 ## cmp-supabase-auth-compose
 
 | Declaration | Purpose |
 |---|---|
-| `supabaseComposeAuthExtras(config, googleNative, appleNative)` | the `ComposeAuth` install block |
-| `rememberGoogleSignIn(client, linkIdentity, onError)` | native Google; `linkIdentity = true` upgrades a guest |
-| `rememberAppleSignIn(client, linkIdentity, onError)` | native Apple on iOS, redirect elsewhere |
-| `SignInLauncher` | `launch()` |
-| `GoogleSignInButton` / `AppleSignInButton` / `ContinueAsGuestButton` | brand-compliant buttons |
-| `SupabaseLoginScreen(...)` | slot-based screen — `header`, `footer`, `showGoogle/Apple/GuestOption`, `onSignedIn` |
-| `SupabaseAuthViewModel` | `state: StateFlow<SupabaseAuthUiState>`, `onSignInStarted`, `onSignInFailed`, `continueAsGuest`, `signInWithFallback`, `signOut`, `dismissError` |
-| `SupabaseAuthUiState` | `isLoading`, `user`, `isSignedIn`, `error` |
-| `supabaseAuthComposeModule()` | binds the ViewModel as a **factory** |
+| `kmpSupabaseComposeAuthExtras(config, googleNative, appleNative)` | the `ComposeAuth` install block |
+| `rememberKmpSupabaseGoogleSignIn(client, linkIdentity, onError)` | native Google; `linkIdentity = true` upgrades a guest |
+| `rememberKmpSupabaseAppleSignIn(client, linkIdentity, onError)` | native Apple on iOS, redirect elsewhere |
+| `KmpSupabaseSignInLauncher` | `launch()` |
+| `KmpSupabaseGoogleSignInButton` / `KmpSupabaseAppleSignInButton` / `KmpSupabaseContinueAsGuestButton` | brand-compliant buttons |
+| `KmpSupabaseLoginScreen(...)` | slot-based screen — `header`, `footer`, `showGoogle/Apple/GuestOption`, `onSignedIn` |
+| `KmpSupabaseAuthViewModel` | `state: StateFlow<KmpSupabaseAuthUiState>`, `onSignInStarted`, `onSignInFailed`, `continueAsGuest`, `signInWithFallback`, `signOut`, `dismissError` |
+| `KmpSupabaseAuthUiState` | `isLoading`, `user`, `isSignedIn`, `error` |
+| `kmpSupabaseAuthComposeModule()` | binds the ViewModel as a **factory** |
 
 A `factory`, not a `single`: each login screen gets its own ViewModel, so a sign-in abandoned on
 one screen cannot leave stale loading or error state on the next.

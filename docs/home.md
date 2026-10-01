@@ -38,12 +38,12 @@ dependencies {
 ```kotlin
 val AppModule = module {
     includes(
-        supabaseAuth(SupabaseAuthConfig(projectRef = "…", googleWebClientId = "…")),
-        supabaseAuthComposeModule(),
+        kmpSupabaseAuth(KmpSupabaseAuthConfig(projectRef = "…", googleWebClientId = "…")),
+        kmpSupabaseAuthComposeModule(),
     )
 }
 
-SupabaseLoginScreen(
+KmpSupabaseLoginScreen(
     viewModel = koinViewModel(),
     client = koinInject(),
     onSignedIn = { navigateHome() },
@@ -70,9 +70,9 @@ only reaches the *next* project is close to worthless.
 |---|---|
 | **Native sign-in** | Credential Manager (Android) · ASAuthorization (iOS) · OAuth redirect elsewhere — the plugin picks per platform |
 | **Guest sessions** | `signInAnonymously()` with RLS from the first write; `linkIdentity` upgrades **without changing the user id** |
-| **Layered DI** | One `includes(supabaseAuth(config))`, or one line per rung across `core/network` → `core/store` → `core/data` |
-| **Drop-in UI** | Slot-based `SupabaseLoginScreen`, brand-compliant provider buttons, a session-driven ViewModel |
-| **Testability** | `FakeAuthRepository` ships in the main artifact |
+| **Layered DI** | One `includes(kmpSupabaseAuth(config))`, or one line per rung across `core/network` → `core/store` → `core/data` |
+| **Drop-in UI** | Slot-based `KmpSupabaseLoginScreen`, brand-compliant provider buttons, a session-driven ViewModel |
+| **Testability** | `FakeKmpSupabaseAuthRepository` ships in the main artifact |
 
 ## Three things worth knowing before you build on it
 
@@ -85,7 +85,7 @@ already has. A second client carries no session, so every RLS-gated call resolve
 on-device: the app sat on "Signing in…" while Supabase logged `Authenticated`.
 
 **The library owns the session; your app keeps owning the user.** Profile data stays in your
-store, untouched. `AuthUser` carries identity only.
+store, untouched. `KmpSupabaseAuthUser` carries identity only.
 
 [Read the architecture →](architecture.md)
 

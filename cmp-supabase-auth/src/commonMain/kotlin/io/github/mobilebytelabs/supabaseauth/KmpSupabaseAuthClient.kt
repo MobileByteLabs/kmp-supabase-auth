@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
  * because `compose-auth` publishes only 7 targets and depending on it here would collapse this
  * module from 17 to 7. [raw] is the seam that module uses to reach the underlying client.
  */
-public interface SupabaseAuthClient {
+public interface KmpSupabaseAuthClient {
 
     /** True when real (non-placeholder) Supabase credentials are present. */
     public val isConfigured: Boolean
@@ -36,7 +36,7 @@ public interface SupabaseAuthClient {
     public val sessionStatus: Flow<SessionStatus>?
 
     /** The signed-in user, or null while signed out. Constant null when unconfigured. */
-    public val currentUser: Flow<AuthUser?>
+    public val currentUser: Flow<KmpSupabaseAuthUser?>
 
     /** True while a session exists. Constant false when unconfigured. */
     public val isSignedIn: Flow<Boolean>

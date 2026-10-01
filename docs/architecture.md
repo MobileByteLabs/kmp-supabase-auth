@@ -18,10 +18,10 @@ On Android the native-Google `onResult(Success)` callback frequently never fires
 id_token exchange succeeded and the session landed. This was observed on-device: an app sat on
 "Signing in…" while Supabase logged `Authenticated`.
 
-So `SupabaseAuthViewModel` derives `isSignedIn` from `AuthRepository.isSignedIn`, and uses
+So `KmpSupabaseAuthViewModel` derives `isSignedIn` from `KmpSupabaseAuthRepository.isSignedIn`, and uses
 `onResult` **only** for `Error` / `NetworkError` / `ClosedByUser`, which do fire reliably.
 
-`SupabaseAuthViewModelTest.reachesSignedInFromTheSessionAloneWithNoSuccessCallback` pins this: it
+`KmpSupabaseAuthViewModelTest.reachesSignedInFromTheSessionAloneWithNoSuccessCallback` pins this: it
 reaches signed-in with no callback invoked at all. Rewire the ViewModel to trust the callback and
 that test fails.
 
@@ -29,12 +29,12 @@ that test fails.
 
 | Owns | Who |
 |---|---|
-| Supabase session — tokens, provider identity, status | **library** (`AuthSessionStore`) |
+| Supabase session — tokens, provider identity, status | **library** (`KmpSupabaseAuthSessionStore`) |
 | User profile data, app preferences | **your app**, untouched |
 | Attaching the JWT to API calls | **your app's** existing `AuthHeaderBridge` |
 | Logout fan-out | **your app's** `UserLogoutManager` / `StoreRegistry` |
 
-`AuthUser` carries identity only — id, email, display name, avatar, provider, anonymous flag. The
+`KmpSupabaseAuthUser` carries identity only — id, email, display name, avatar, provider, anonymous flag. The
 library never writes to your preferences store and defines no profile type, so there is never a
 second owner of state you already own.
 
@@ -55,7 +55,7 @@ Dropping Store5 also lifted the headless module from 8 targets to 17.
 
 No consumer writes a platform-conditional import to make sign-in work.
 
-Android needs a real OAuth-redirect receiver, so the library ships `SupabaseAuthCallbackActivity`
+Android needs a real OAuth-redirect receiver, so the library ships `KmpSupabaseAuthCallbackActivity`
 and registers it by manifest merge — but the class is `internal`, armed from commonMain through
 an `internal expect fun registerAuthCallbackClient`. Every non-Android target shares a single
 no-op actual.

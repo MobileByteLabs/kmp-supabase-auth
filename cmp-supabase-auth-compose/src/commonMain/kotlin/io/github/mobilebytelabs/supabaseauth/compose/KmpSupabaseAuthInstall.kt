@@ -1,9 +1,9 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import io.github.jan.supabase.SupabaseClientBuilder
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
-import io.github.mobilebytelabs.supabaseauth.di.supabaseAuthExtras
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.di.kmpSupabaseAuthExtras
 
 /**
  * Everything this library installs into a Supabase client, as ONE branch of a fork's
@@ -13,7 +13,7 @@ import io.github.mobilebytelabs.supabaseauth.di.supabaseAuthExtras
  * single<SupabaseExtrasProvider> {
  *     SupabaseExtrasProvider { id ->
  *         when (id) {
- *             AUTH_ACCESS_POINT -> supabaseAuthInstall(AuthConfig)
+ *             AUTH_ACCESS_POINT -> kmpSupabaseAuthInstall(AuthConfig)
  *             ANALYTICS_POINT   -> { { install(Realtime) } }
  *             else              -> { {} }
  *         }
@@ -26,8 +26,8 @@ import io.github.mobilebytelabs.supabaseauth.di.supabaseAuthExtras
  *
  * ```kotlin
  * {
- *     supabaseAuthExtras(config)(this)
- *     supabaseComposeAuthExtras(config)(this)
+ *     kmpSupabaseAuthExtras(config)(this)
+ *     kmpSupabaseComposeAuthExtras(config)(this)
  * }
  * ```
  *
@@ -39,7 +39,7 @@ import io.github.mobilebytelabs.supabaseauth.di.supabaseAuthExtras
  * one place that can see all the access points. Returning a builder keeps the `when` the single
  * place auth is wired, without owning it.
  *
- * Pair it with `supabaseAuth(config, clientProvider = …)` in the same module — that registers the
+ * Pair it with `kmpSupabaseAuth(config, clientProvider = …)` in the same module — that registers the
  * network/store/repository rungs. Installing the plugins without the graph gives you an
  * authenticated client no repository reads from; the graph without the plugins gives you a
  * repository with no `Auth` installed.
@@ -47,12 +47,12 @@ import io.github.mobilebytelabs.supabaseauth.di.supabaseAuthExtras
  * @param googleNative pass `false` to force Google through the web-OAuth fallback.
  * @param appleNative pass `false` to force Apple through the web-OAuth fallback.
  */
-public fun supabaseAuthInstall(
-    config: SupabaseAuthConfig,
+public fun kmpSupabaseAuthInstall(
+    config: KmpSupabaseAuthConfig,
     googleNative: Boolean = true,
     appleNative: Boolean = true,
-    configure: SupabaseAuthOptions.() -> Unit = {},
+    configure: KmpSupabaseAuthOptions.() -> Unit = {},
 ): SupabaseClientBuilder.() -> Unit = {
-    supabaseAuthExtras(config, configure)(this)
-    supabaseComposeAuthExtras(config, googleNative, appleNative)(this)
+    kmpSupabaseAuthExtras(config, configure)(this)
+    kmpSupabaseComposeAuthExtras(config, googleNative, appleNative)(this)
 }

@@ -7,11 +7,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SupabaseAuthConfigTest {
+class KmpSupabaseAuthConfigTest {
 
     @Test
     fun hasGoogleNative_isTrue_whenWebClientIdPresent() {
-        val config = SupabaseAuthConfig(
+        val config = KmpSupabaseAuthConfig(
             projectRef = "abcdefgh",
             googleWebClientId = "123.apps.googleusercontent.com",
         )
@@ -22,28 +22,28 @@ class SupabaseAuthConfigTest {
     // to the OAuth-redirect path, never throw and never half-configure the native flow.
     @Test
     fun hasGoogleNative_isFalse_whenWebClientIdBlankOrWhitespace() {
-        assertFalse(SupabaseAuthConfig("abcdefgh", googleWebClientId = "").hasGoogleNative)
-        assertFalse(SupabaseAuthConfig("abcdefgh", googleWebClientId = "   ").hasGoogleNative)
-        assertFalse(SupabaseAuthConfig("abcdefgh").hasGoogleNative)
+        assertFalse(KmpSupabaseAuthConfig("abcdefgh", googleWebClientId = "").hasGoogleNative)
+        assertFalse(KmpSupabaseAuthConfig("abcdefgh", googleWebClientId = "   ").hasGoogleNative)
+        assertFalse(KmpSupabaseAuthConfig("abcdefgh").hasGoogleNative)
     }
 
     @Test
     fun redirectUrl_splitsIntoSchemeAndHost() {
-        val config = SupabaseAuthConfig("abcdefgh", redirectUrl = "myapp://login-callback")
+        val config = KmpSupabaseAuthConfig("abcdefgh", redirectUrl = "myapp://login-callback")
         assertEquals("myapp", config.oauthScheme)
         assertEquals("login-callback", config.oauthHost)
     }
 
     @Test
     fun redirectUrl_withoutSeparator_yieldsNulls() {
-        val config = SupabaseAuthConfig("abcdefgh", redirectUrl = "not-a-url")
+        val config = KmpSupabaseAuthConfig("abcdefgh", redirectUrl = "not-a-url")
         assertNull(config.oauthScheme)
         assertNull(config.oauthHost)
     }
 
     @Test
     fun redirectUrl_blank_yieldsNulls() {
-        val config = SupabaseAuthConfig("abcdefgh")
+        val config = KmpSupabaseAuthConfig("abcdefgh")
         assertNull(config.oauthScheme)
         assertNull(config.oauthHost)
     }
@@ -51,17 +51,17 @@ class SupabaseAuthConfigTest {
     // Placeholder SHAPE, not just emptiness — an unfilled template must not reach a release build.
     @Test
     fun isConfigured_rejectsBlankAndPlaceholderProjectRefs() {
-        assertTrue(SupabaseAuthConfig("abcdefgh").isConfigured)
-        assertFalse(SupabaseAuthConfig("").isConfigured)
-        assertFalse(SupabaseAuthConfig("   ").isConfigured)
-        assertFalse(SupabaseAuthConfig("YOUR_PROJECT_REF").isConfigured)
-        assertFalse(SupabaseAuthConfig("your_project_ref").isConfigured)
+        assertTrue(KmpSupabaseAuthConfig("abcdefgh").isConfigured)
+        assertFalse(KmpSupabaseAuthConfig("").isConfigured)
+        assertFalse(KmpSupabaseAuthConfig("   ").isConfigured)
+        assertFalse(KmpSupabaseAuthConfig("YOUR_PROJECT_REF").isConfigured)
+        assertFalse(KmpSupabaseAuthConfig("your_project_ref").isConfigured)
     }
 
     @Test
     fun validate_returnsConfigUnchanged_whenUsable() {
-        val config = SupabaseAuthConfig("abcdefgh", googleWebClientId = "id")
-        assertEquals(config, SupabaseAuth.validate(config))
+        val config = KmpSupabaseAuthConfig("abcdefgh", googleWebClientId = "id")
+        assertEquals(config, KmpSupabaseAuth.validate(config))
     }
 
     // A missing provider id is recoverable (OAuth redirect); an absent projectRef is not —
@@ -69,13 +69,13 @@ class SupabaseAuthConfigTest {
     @Test
     fun validate_throws_onPlaceholderProjectRef() {
         assertFailsWith<IllegalArgumentException> {
-            SupabaseAuth.validate(SupabaseAuthConfig("YOUR_PROJECT_REF"))
+            KmpSupabaseAuth.validate(KmpSupabaseAuthConfig("YOUR_PROJECT_REF"))
         }
     }
 
     @Test
     fun validate_doesNotThrow_whenOnlyProvidersAreUnconfigured() {
-        val bare = SupabaseAuthConfig("abcdefgh")
-        assertEquals(bare, SupabaseAuth.validate(bare))
+        val bare = KmpSupabaseAuthConfig("abcdefgh")
+        assertEquals(bare, KmpSupabaseAuth.validate(bare))
     }
 }

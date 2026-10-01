@@ -1,8 +1,8 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
-import io.github.mobilebytelabs.supabaseauth.AuthError
-import io.github.mobilebytelabs.supabaseauth.AuthUser
-import io.github.mobilebytelabs.supabaseauth.testing.FakeAuthRepository
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
+import io.github.mobilebytelabs.supabaseauth.testing.FakeKmpSupabaseAuthRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
@@ -15,14 +15,14 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SupabaseAuthViewModelTest {
+class KmpSupabaseAuthViewModelTest {
 
     // UnconfinedTestDispatcher, not the runTest default: the ViewModel starts collecting the
     // session in `init`, and under StandardTestDispatcher that collector is merely SCHEDULED —
     // so a session emitted before the first advance is never observed and every assertion about
     // signed-in state fails for a reason that has nothing to do with the code under test.
-    private fun TestScope.viewModel(repo: FakeAuthRepository) =
-        SupabaseAuthViewModel(repo, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
+    private fun TestScope.viewModel(repo: FakeKmpSupabaseAuthRepository) =
+        KmpSupabaseAuthViewModel(repo, CoroutineScope(UnconfinedTestDispatcher(testScheduler)))
 
     /**
      * THE load-bearing test.
@@ -34,13 +34,13 @@ class SupabaseAuthViewModelTest {
      */
     @Test
     fun reachesSignedInFromTheSessionAloneWithNoSuccessCallback() = runTest {
-        val repo = FakeAuthRepository()
+        val repo = FakeKmpSupabaseAuthRepository()
         val vm = viewModel(repo)
 
         vm.onSignInStarted()
         assertTrue(vm.state.value.isLoading)
 
-        repo.emitSession(AuthUser(id = "u1", email = "a@b.test"))
+        repo.emitSession(KmpSupabaseAuthUser(id = "u1", email = "a@b.test"))
         testScheduler.advanceUntilIdle()
 
         assertTrue(vm.state.value.isSignedIn)
@@ -50,9 +50,9 @@ class SupabaseAuthViewModelTest {
 
     @Test
     fun failureClearsLoadingAndSurfacesTheError() = runTest {
-        val vm = viewModel(FakeAuthRepository())
+        val vm = viewModel(FakeKmpSupabaseAuthRepository())
         vm.onSignInStarted()
-        vm.onSignInFailed(AuthError.Network())
+        vm.onSignInFailed(KmpSupabaseAuthError.Network())
         testScheduler.advanceUntilIdle()
 
         assertFalse(vm.state.value.isLoading)
@@ -62,9 +62,9 @@ class SupabaseAuthViewModelTest {
     /** Dismissing the provider sheet is not a failure and must not render as one. */
     @Test
     fun cancellationClearsLoadingWithoutShowingAnError() = runTest {
-        val vm = viewModel(FakeAuthRepository())
+        val vm = viewModel(FakeKmpSupabaseAuthRepository())
         vm.onSignInStarted()
-        vm.onSignInFailed(AuthError.Cancelled)
+        vm.onSignInFailed(KmpSupabaseAuthError.Cancelled)
         testScheduler.advanceUntilIdle()
 
         assertFalse(vm.state.value.isLoading)
@@ -73,7 +73,7 @@ class SupabaseAuthViewModelTest {
 
     @Test
     fun continueAsGuestReachesAnonymousSignedInState() = runTest {
-        val vm = viewModel(FakeAuthRepository())
+        val vm = viewModel(FakeKmpSupabaseAuthRepository())
         vm.continueAsGuest()
         testScheduler.advanceUntilIdle()
 
@@ -83,8 +83,8 @@ class SupabaseAuthViewModelTest {
 
     @Test
     fun dismissErrorClearsIt() = runTest {
-        val vm = viewModel(FakeAuthRepository())
-        vm.onSignInFailed(AuthError.Network())
+        val vm = viewModel(FakeKmpSupabaseAuthRepository())
+        vm.onSignInFailed(KmpSupabaseAuthError.Network())
         vm.dismissError()
         assertNull(vm.state.value.error)
     }

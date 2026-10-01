@@ -1,6 +1,7 @@
 package io.github.mobilebytelabs.supabaseauth.compose
 
 import androidx.compose.runtime.Composable
+import org.koin.compose.koinInject
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -10,10 +11,10 @@ import io.github.jan.supabase.compose.auth.composable.NativeSignInResult
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithApple
 import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
 import io.github.jan.supabase.compose.auth.composeAuth
-import io.github.mobilebytelabs.supabaseauth.AuthError
-import io.github.mobilebytelabs.supabaseauth.AuthProvider
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthClient
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthLog
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,12 +23,12 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * How long a launcher waits for a provider before reporting [AuthError.NoResponse].
+ * How long a launcher waits for a provider before reporting [KmpSupabaseAuthError.NoResponse].
  *
  * Generous on purpose: a real provider sheet can sit open while someone finds their password, and
  * timing that out would be worse than the bug this guards against.
  */
-public val DefaultSignInTimeout: Duration = 60.seconds
+public val KmpSupabaseDefaultSignInTimeout: Duration = 60.seconds
 
 /**
  * Native Google sign-in — Credential Manager on Android, native on iOS, GoTrue OAuth redirect
@@ -36,12 +37,12 @@ public val DefaultSignInTimeout: Duration = 60.seconds
  * [onError] reports only genuine failures. **Success is deliberately NOT reported here.** On
  * Android the `NativeSignInResult.Success` callback frequently never fires even though the
  * id_token exchange succeeded and the session landed, so a UI waiting on it hangs on a spinner
- * while the person is already signed in. Observe `AuthRepository.session` instead.
+ * while the person is already signed in. Observe `KmpSupabaseAuthRepository.session` instead.
  *
  * Pass [linkIdentity] to attach this provider to the CURRENT session rather than starting a new
  * one — the guest-to-account upgrade, implemented via `ComposeAuth.LINK_IDENTITY_CALLBACK`.
  *
- * @param timeout report [AuthError.NoResponse] if the provider never calls back at all. Pass
+ * @param timeout report [KmpSupabaseAuthError.NoResponse] if the provider never calls back at all. Pass
  *   [Duration.INFINITE] to disable. See [rememberSignInWithWatchdog] for why this exists.
  * @param dialogType how Credential Manager presents the account chooser on Android.
  *   **Defaults to [GoogleDialogType.BOTTOM_SHEET]**, the modern "Sign in with Google" sheet.
@@ -50,22 +51,22 @@ public val DefaultSignInTimeout: Duration = 60.seconds
  *   error. A no-op on iOS/desktop/web, which use the GoTrue OAuth redirect.
  */
 @Composable
-public fun rememberGoogleSignIn(
-    client: SupabaseAuthClient,
+public fun rememberKmpSupabaseGoogleSignIn(
+    client: KmpSupabaseAuthClient = koinInject(),
     linkIdentity: Boolean = false,
-    timeout: Duration = DefaultSignInTimeout,
+    timeout: Duration = KmpSupabaseDefaultSignInTimeout,
     watchdogScope: CoroutineScope? = null,
     dialogType: GoogleDialogType = GoogleDialogType.BOTTOM_SHEET,
-    onError: (AuthError) -> Unit = {},
-): SignInLauncher {
+    onError: (KmpSupabaseAuthError) -> Unit = {},
+): KmpSupabaseSignInLauncher {
     val raw = client.raw ?: return remember {
-        SupabaseAuthLog.log { "GOOGLE: client not configured — launcher will report NotConfigured" }
-        SignInLauncher { onError(AuthError.NotConfigured) }
+        KmpSupabaseAuthLog.log { "GOOGLE: client not configured — launcher will report NotConfigured" }
+        KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.NotConfigured) }
     }
     val watchdog = remember { mutableStateOf<Job?>(null) }
     val onResult: (NativeSignInResult) -> Unit = { result ->
         watchdog.value?.cancel()
-        result.reportFailure(AuthProvider.GOOGLE, onError)
+        result.reportFailure(KmpSupabaseAuthProvider.GOOGLE, onError)
     }
     // `onIdToken` is non-nullable with a plugin-supplied default, so the link-identity variant
     // has to be a separate call rather than a null argument.
@@ -78,31 +79,31 @@ public fun rememberGoogleSignIn(
     } else {
         raw.composeAuth.rememberSignInWithGoogle(type = dialogType, onResult = onResult)
     }
-    return rememberSignInWithWatchdog(AuthProvider.GOOGLE, timeout, watchdog, watchdogScope, onError) {
+    return rememberSignInWithWatchdog(KmpSupabaseAuthProvider.GOOGLE, timeout, watchdog, watchdogScope, onError) {
         state.startFlow()
     }
 }
 
 /**
  * Native Apple sign-in on iOS; GoTrue OAuth redirect elsewhere — including macOS, JVM and web.
- * Same success-reporting caveat and [timeout] behaviour as [rememberGoogleSignIn].
+ * Same success-reporting caveat and [timeout] behaviour as [rememberKmpSupabaseGoogleSignIn].
  */
 @Composable
-public fun rememberAppleSignIn(
-    client: SupabaseAuthClient,
+public fun rememberKmpSupabaseAppleSignIn(
+    client: KmpSupabaseAuthClient = koinInject(),
     linkIdentity: Boolean = false,
-    timeout: Duration = DefaultSignInTimeout,
+    timeout: Duration = KmpSupabaseDefaultSignInTimeout,
     watchdogScope: CoroutineScope? = null,
-    onError: (AuthError) -> Unit = {},
-): SignInLauncher {
+    onError: (KmpSupabaseAuthError) -> Unit = {},
+): KmpSupabaseSignInLauncher {
     val raw = client.raw ?: return remember {
-        SupabaseAuthLog.log { "APPLE: client not configured — launcher will report NotConfigured" }
-        SignInLauncher { onError(AuthError.NotConfigured) }
+        KmpSupabaseAuthLog.log { "APPLE: client not configured — launcher will report NotConfigured" }
+        KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.NotConfigured) }
     }
     val watchdog = remember { mutableStateOf<Job?>(null) }
     val onResult: (NativeSignInResult) -> Unit = { result ->
         watchdog.value?.cancel()
-        result.reportFailure(AuthProvider.APPLE, onError)
+        result.reportFailure(KmpSupabaseAuthProvider.APPLE, onError)
     }
     val state = if (linkIdentity) {
         raw.composeAuth.rememberSignInWithApple(
@@ -112,20 +113,20 @@ public fun rememberAppleSignIn(
     } else {
         raw.composeAuth.rememberSignInWithApple(onResult = onResult)
     }
-    return rememberSignInWithWatchdog(AuthProvider.APPLE, timeout, watchdog, watchdogScope, onError) {
+    return rememberSignInWithWatchdog(KmpSupabaseAuthProvider.APPLE, timeout, watchdog, watchdogScope, onError) {
         state.startFlow()
     }
 }
 
 /**
- * A launcher that reports [AuthError.NoResponse] if the provider never answers.
+ * A launcher that reports [KmpSupabaseAuthError.NoResponse] if the provider never answers.
  *
  * A provider CAN return nothing at all — no success, no error, no cancellation. Verified on an
  * Android device: native Google was launched, Credential Manager showed no UI, and `onResult`
  * never fired, leaving the screen on "Signing in…" indefinitely with nothing in the logs after
  * the handoff.
  *
- * It lives at the LAUNCHER layer, not in [SupabaseAuthViewModel], and that placement is the whole
+ * It lives at the LAUNCHER layer, not in [KmpSupabaseAuthViewModel], and that placement is the whole
  * point. A guard in the library's ViewModel protects only apps that adopt it — most bring their
  * own, so the first version of this fix did nothing for the app that exposed the bug. Every
  * sign-in goes through a launcher, so this covers every consumer regardless of their state layer.
@@ -134,13 +135,13 @@ public fun rememberAppleSignIn(
  */
 @Composable
 private fun rememberSignInWithWatchdog(
-    provider: AuthProvider,
+    provider: KmpSupabaseAuthProvider,
     timeout: Duration,
     watchdog: androidx.compose.runtime.MutableState<Job?>,
     watchdogScope: CoroutineScope?,
-    onError: (AuthError) -> Unit,
+    onError: (KmpSupabaseAuthError) -> Unit,
     start: () -> Unit,
-): SignInLauncher {
+): KmpSupabaseSignInLauncher {
     // `watchdogScope` matters more than it looks. The default is this composable's scope, which
     // Compose CANCELS when the button leaves composition — and a login screen that swaps its
     // buttons for a spinner while signing in does exactly that. The watchdog then dies at the
@@ -151,18 +152,18 @@ private fun rememberSignInWithWatchdog(
     val fallbackScope = rememberCoroutineScope()
     val scope = watchdogScope ?: fallbackScope
     return remember(provider, timeout, start) {
-        SignInLauncher {
-            SupabaseAuthLog.log { "$provider: startFlow() — handing off to the provider" }
+        KmpSupabaseSignInLauncher {
+            KmpSupabaseAuthLog.log { "$provider: startFlow() — handing off to the provider" }
             watchdog.value?.cancel()
             if (timeout != Duration.INFINITE) {
                 watchdog.value = scope.launch {
                     delay(timeout)
-                    SupabaseAuthLog.log {
+                    KmpSupabaseAuthLog.log {
                         "$provider: TIMEOUT after $timeout — the provider never called back " +
                             "(no success, no error, no cancellation). Most often this build's " +
                             "signing certificate is not registered against the OAuth client."
                     }
-                    onError(AuthError.NoResponse)
+                    onError(KmpSupabaseAuthError.NoResponse)
                 }
             }
             start()
@@ -171,23 +172,23 @@ private fun rememberSignInWithWatchdog(
 }
 
 /** Maps the plugin's result onto the provider-neutral taxonomy. Success is intentionally ignored. */
-private fun NativeSignInResult.reportFailure(provider: AuthProvider, onError: (AuthError) -> Unit) {
+private fun NativeSignInResult.reportFailure(provider: KmpSupabaseAuthProvider, onError: (KmpSupabaseAuthError) -> Unit) {
     // Logged for EVERY branch, success included. A provider that returns nothing at all is
     // indistinguishable from one that was never launched, and that ambiguity is exactly what makes
     // a stuck "Signing in…" impossible to diagnose from the outside: silence here means the
     // callback never fired, which is a different bug from a reported failure.
     when (this) {
-        is NativeSignInResult.Success -> SupabaseAuthLog.log { "$provider: onResult = Success" }
+        is NativeSignInResult.Success -> KmpSupabaseAuthLog.log { "$provider: onResult = Success" }
 
         // sessionStatus is the source of truth
         is NativeSignInResult.ClosedByUser -> {
-            SupabaseAuthLog.log { "$provider: onResult = ClosedByUser (dismissed)" }
-            onError(AuthError.Cancelled)
+            KmpSupabaseAuthLog.log { "$provider: onResult = ClosedByUser (dismissed)" }
+            onError(KmpSupabaseAuthError.Cancelled)
         }
 
         is NativeSignInResult.NetworkError -> {
-            SupabaseAuthLog.log { "$provider: onResult = NetworkError: $message" }
-            onError(AuthError.Network())
+            KmpSupabaseAuthLog.log { "$provider: onResult = NetworkError: $message" }
+            onError(KmpSupabaseAuthError.Network())
         }
 
         // The provider's own message and exception are the ONLY description of WHY this failed,
@@ -196,8 +197,8 @@ private fun NativeSignInResult.reportFailure(provider: AuthProvider, onError: (A
         // Typical content here: an unregistered signing certificate, or a client id that does not
         // match the calling package.
         is NativeSignInResult.Error -> {
-            SupabaseAuthLog.logError(exception) { "$provider: onResult = Error: $message" }
-            onError(AuthError.ProviderRejected(provider, exception))
+            KmpSupabaseAuthLog.logError(exception) { "$provider: onResult = Error: $message" }
+            onError(KmpSupabaseAuthError.ProviderRejected(provider, exception))
         }
     }
 }

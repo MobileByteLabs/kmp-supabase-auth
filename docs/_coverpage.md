@@ -9,7 +9,7 @@
 - 👤 &nbsp;Anonymous sessions with **id-preserving** upgrade to a real account
 - 🧩 &nbsp;Installs onto the client you already have — **never a second one**
 - 📦 &nbsp;**17 targets** headless · 6 with Compose UI
-- 🧪 &nbsp;`FakeAuthRepository` in the main artifact, not a test source set
+- 🧪 &nbsp;`FakeKmpSupabaseAuthRepository` in the main artifact, not a test source set
 
 [Get started](/docs/getting-started.md)
 [GitHub](https://github.com/MobileByteLabs/kmp-supabase-auth)

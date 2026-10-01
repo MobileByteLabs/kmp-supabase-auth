@@ -11,7 +11,7 @@ package io.github.mobilebytelabs.supabaseauth
  * Enable it from the consuming app, usually in debug builds only:
  *
  * ```kotlin
- * SupabaseAuthLog.handler = { line -> println(line) }        // or Log.d("auth", line)
+ * KmpSupabaseAuthLog.handler = { line -> println(line) }        // or Log.d("auth", line)
  * ```
  *
  * ## What is safe to log here
@@ -25,7 +25,7 @@ package io.github.mobilebytelabs.supabaseauth
  * "signInWithGoogle(1234-abc.apps.googleusercontent.com)" is a value in someone's log aggregator
  * forever.
  */
-public object SupabaseAuthLog {
+public object KmpSupabaseAuthLog {
 
     /**
      * Where lines go. Null (the default) means logging is off and every call site short-circuits

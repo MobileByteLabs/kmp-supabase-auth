@@ -2,15 +2,15 @@ package io.github.mobilebytelabs.supabaseauth.di
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.SupabaseClientBuilder
-import io.github.mobilebytelabs.supabaseauth.AuthRepository
-import io.github.mobilebytelabs.supabaseauth.AuthSessionStore
-import io.github.mobilebytelabs.supabaseauth.DefaultAuthRepository
-import io.github.mobilebytelabs.supabaseauth.DefaultAuthSessionStore
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthClient
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthRepository
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthSessionStore
+import io.github.mobilebytelabs.supabaseauth.DefaultKmpSupabaseAuthRepository
+import io.github.mobilebytelabs.supabaseauth.DefaultKmpSupabaseAuthSessionStore
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
 import io.github.mobilebytelabs.supabaseauth.buildOptions
-import io.github.mobilebytelabs.supabaseauth.internal.SupabaseAuthClientImpl
+import io.github.mobilebytelabs.supabaseauth.internal.KmpSupabaseAuthClientImpl
 import io.github.mobilebytelabs.supabaseauth.internal.buildAuthExtras
 import io.github.mobilebytelabs.supabaseauth.registerAuthCallbackClient
 import org.koin.core.module.Module
@@ -27,23 +27,23 @@ import org.koin.dsl.module
  * single<SupabaseExtrasProvider> {
  *     SupabaseExtrasProvider { id ->
  *         when (id) {
- *             "your-project-ref" -> supabaseAuthExtras(config)
+ *             "your-project-ref" -> kmpSupabaseAuthExtras(config)
  *             else -> { {} }
  *         }
  *     }
  * }
  * ```
  *
- * For native Google/Apple, compose it with `supabaseComposeAuthExtras(...)` from
+ * For native Google/Apple, compose it with `kmpSupabaseComposeAuthExtras(...)` from
  * `cmp-supabase-auth-compose`.
  */
-public fun supabaseAuthExtras(
-    config: SupabaseAuthConfig,
-    configure: SupabaseAuthOptions.() -> Unit = {},
+public fun kmpSupabaseAuthExtras(
+    config: KmpSupabaseAuthConfig,
+    configure: KmpSupabaseAuthOptions.() -> Unit = {},
 ): SupabaseClientBuilder.() -> Unit = buildAuthExtras(config, buildOptions(configure))
 
 /**
- * Rung 1 — `core/network`. Binds [SupabaseAuthClient] over the app's existing [SupabaseClient].
+ * Rung 1 — `core/network`. Binds [KmpSupabaseAuthClient] over the app's existing [SupabaseClient].
  *
  * [clientProvider] defaults to `get()`, which suits an app binding `SupabaseClient` directly.
  * kmp-project-template does NOT: it binds `SupabaseClientFactory` and reaches the client through
@@ -51,7 +51,7 @@ public fun supabaseAuthExtras(
  *
  * ```
  * includes(
- *     supabaseAuthNetwork(config) {
+ *     kmpSupabaseAuthNetwork(config) {
  *         get<SupabaseClientFactory>().requireClientFor(config.projectRef).client
  *     },
  * )
@@ -60,18 +60,18 @@ public fun supabaseAuthExtras(
  * This module NEVER builds a client — a second one carries no session, so every RLS-gated call
  * resolves no `auth.uid()` while compiling cleanly.
  */
-public fun supabaseAuthNetwork(
-    config: SupabaseAuthConfig,
-    configure: SupabaseAuthOptions.() -> Unit = {},
+public fun kmpSupabaseAuthNetwork(
+    config: KmpSupabaseAuthConfig,
+    configure: KmpSupabaseAuthOptions.() -> Unit = {},
     clientProvider: Scope.() -> SupabaseClient = { get() },
 ): Module = module {
     single { buildOptions(configure) }
-    single<SupabaseAuthClient> {
+    single<KmpSupabaseAuthClient> {
         val supabase = clientProvider(this)
         // Arm the platform OAuth-redirect receiver before anything can navigate away. On
         // Android that is the library's own callback activity; elsewhere it is a no-op.
         registerAuthCallbackClient(supabase)
-        SupabaseAuthClientImpl(
+        KmpSupabaseAuthClientImpl(
             client = supabase,
             options = get(),
             isConfigured = config.isConfigured,
@@ -80,13 +80,13 @@ public fun supabaseAuthNetwork(
 }
 
 /** Rung 2 — `core/store`. */
-public fun supabaseAuthStore(): Module = module {
-    single<AuthSessionStore> { DefaultAuthSessionStore(client = get()) }
+public fun kmpSupabaseAuthStore(): Module = module {
+    single<KmpSupabaseAuthSessionStore> { DefaultKmpSupabaseAuthSessionStore(client = get()) }
 }
 
 /** Rung 3 — `core/data`. */
-public fun supabaseAuthRepository(): Module = module {
-    single<AuthRepository> { DefaultAuthRepository(client = get(), store = get()) }
+public fun kmpSupabaseAuthRepository(): Module = module {
+    single<KmpSupabaseAuthRepository> { DefaultKmpSupabaseAuthRepository(client = get(), store = get()) }
 }
 
 /**
@@ -95,14 +95,14 @@ public fun supabaseAuthRepository(): Module = module {
  * Defined AS the three rung modules rather than duplicating their bindings — that is what makes
  * "one line" and "three lines" provably identical. `ModuleParityTest` asserts it.
  */
-public fun supabaseAuth(
-    config: SupabaseAuthConfig,
-    configure: SupabaseAuthOptions.() -> Unit = {},
+public fun kmpSupabaseAuth(
+    config: KmpSupabaseAuthConfig,
+    configure: KmpSupabaseAuthOptions.() -> Unit = {},
     clientProvider: Scope.() -> SupabaseClient = { get() },
 ): Module = module {
     includes(
-        supabaseAuthNetwork(config, configure, clientProvider),
-        supabaseAuthStore(),
-        supabaseAuthRepository(),
+        kmpSupabaseAuthNetwork(config, configure, clientProvider),
+        kmpSupabaseAuthStore(),
+        kmpSupabaseAuthRepository(),
     )
 }

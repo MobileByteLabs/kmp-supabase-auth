@@ -79,9 +79,9 @@ registered.
 ```kotlin
 // core/network/build.gradle.kts
 commonMain.dependencies {
-    // `api`, not `implementation` — core/data re-exposes AuthUser/AuthSession upward.
+    // `api`, not `implementation` — core/data re-exposes KmpSupabaseAuthUser/KmpSupabaseAuthSession upward.
     api(libs.cmp.supabase.auth)
-    // The seam installs ComposeAuth too, and supabaseComposeAuthExtras lives in the Compose module.
+    // The seam installs ComposeAuth too, and kmpSupabaseComposeAuthExtras lives in the Compose module.
     implementation(libs.cmp.supabase.auth.compose)
 }
 ```
@@ -92,7 +92,7 @@ commonMain.dependencies {
 // core/network/src/commonMain/kotlin/.../di/ProjectNetworkModule.kt
 private const val ACCESS_POINT = "<your-supabase-project-ref>"
 
-private val AuthConfig = SupabaseAuthConfig(
+private val AuthConfig = KmpSupabaseAuthConfig(
     projectRef = ACCESS_POINT,
     googleWebClientId = YourConfig.googleOauthWebClientId, // the WEB client id, not Android/iOS
     redirectUrl = YourConfig.oauthRedirectUrl,             // e.g. "com.example.app://login-callback"
@@ -102,7 +102,7 @@ val ProjectNetworkModule = module {
     single<SupabaseExtrasProvider> {
         SupabaseExtrasProvider { id ->
             when (id) {
-                ACCESS_POINT -> supabaseAuthInstall(AuthConfig) // Auth + ComposeAuth
+                ACCESS_POINT -> kmpSupabaseAuthInstall(AuthConfig) // Auth + ComposeAuth
                 else -> { {} }
             }
         }
@@ -110,11 +110,11 @@ val ProjectNetworkModule = module {
 }
 ```
 
-`supabaseAuthInstall` is everything the library installs, as one branch: it splits `redirectUrl`
+`kmpSupabaseAuthInstall` is everything the library installs, as one branch: it splits `redirectUrl`
 into the scheme/host GoTrue needs to intercept the callback, installs `googleNativeLogin` **only
 when `googleWebClientId` is non-blank**, and installs `appleNativeLogin` unconditionally — see
-[Native vs web](#native-vs-web-know-which-you-shipped). Use `supabaseAuthExtras` +
-`supabaseComposeAuthExtras` separately only if you need Auth without the native providers.
+[Native vs web](#native-vs-web-know-which-you-shipped). Use `kmpSupabaseAuthExtras` +
+`kmpSupabaseComposeAuthExtras` separately only if you need Auth without the native providers.
 
 ### Keep auth in ONE place
 
@@ -124,7 +124,7 @@ binding its own provider. The template resolves exactly one instance —
 
 ```kotlin
 when (id) {
-    AUTH_ACCESS_POINT -> supabaseAuthInstall(AuthConfig)
+    AUTH_ACCESS_POINT -> kmpSupabaseAuthInstall(AuthConfig)
     ANALYTICS_POINT   -> { { install(Realtime) } }
     else              -> { {} }
 }
@@ -133,22 +133,22 @@ when (id) {
 A library that bound `single<SupabaseExtrasProvider>` itself would collide with that binding
 (Koin raises `DefinitionOverrideException` on a duplicate type) and take the extension point away
 from the one place that can see every access point. Name the config **`AuthConfig`**, not
-`<Project>SupabaseAuthConfig` — `SupabaseAuthConfig` already says which library it belongs to, and
+`<Project>KmpSupabaseAuthConfig` — `KmpSupabaseAuthConfig` already says which library it belongs to, and
 a project prefix makes the same integration read differently in every fork.
 
 ### 1b. Register the DI graph
 
 ```kotlin
 includes(
-    supabaseAuth(
+    kmpSupabaseAuth(
         config = AuthConfig,
         clientProvider = { get<SupabaseClientFactory>().requireClientFor(ACCESS_POINT).client },
     ),
 )
 ```
 
-`supabaseAuth(...)` is *defined as* `supabaseAuthNetwork() + supabaseAuthStore() +
-supabaseAuthRepository()`, so the three rungs cannot drift apart. Include them individually instead
+`kmpSupabaseAuth(...)` is *defined as* `kmpSupabaseAuthNetwork() + kmpSupabaseAuthStore() +
+kmpSupabaseAuthRepository()`, so the three rungs cannot drift apart. Include them individually instead
 if your fork keeps each in its own module.
 
 Use `requireClientFor`, not `clientFor`. A null would hand the library a *different* client than
@@ -162,13 +162,13 @@ Use `requireClientFor`, not `clientFor`. A null would hand the library a *differ
 commonMain.dependencies { api(libs.cmp.supabase.auth) }
 ```
 
-`supabaseAuthStore()` (already included above) binds `AuthSessionStore`:
+`kmpSupabaseAuthStore()` (already included above) binds `KmpSupabaseAuthSessionStore`:
 
 ```kotlin
-public interface AuthSessionStore {
-    public val user: StateFlow<AuthUser?>
+public interface KmpSupabaseAuthSessionStore {
+    public val user: StateFlow<KmpSupabaseAuthUser?>
     public val isSignedIn: StateFlow<Boolean>
-    public val session: StateFlow<AuthSession>
+    public val session: StateFlow<KmpSupabaseAuthSession>
     public fun start(scope: CoroutineScope)
     public suspend fun clear()
 }
@@ -192,15 +192,15 @@ commonMain.dependencies {
 }
 ```
 
-If your app already has its own `AuthRepository`, **keep that interface** and reimplement it over
+If your app already has its own `KmpSupabaseAuthRepository`, **keep that interface** and reimplement it over
 the library's. Everything above `core/data` then stays untouched.
 
 ```kotlin
-@RepositoryBinding(binds = AuthRepository::class)
+@RepositoryBinding(binds = KmpSupabaseAuthRepository::class)
 internal class AuthRepositoryImpl(
-    private val auth: SupabaseAuthRepository,   // aliased: io.github.mobilebytelabs...AuthRepository
-    private val client: SupabaseAuthClient,
-) : AuthRepository {
+    private val auth: SupabaseAuthRepository,   // aliased: io.github.mobilebytelabs...KmpSupabaseAuthRepository
+    private val client: KmpSupabaseAuthClient,
+) : KmpSupabaseAuthRepository {
 
     override val session: Flow<AppSession> = auth.session.map { it.toAppSession() }
     override val isConfigured: Boolean get() = client.isConfigured
@@ -209,14 +209,14 @@ internal class AuthRepositoryImpl(
 }
 
 // Identity → your profile type. ONE place, so the library stays profile-agnostic.
-private fun AuthUser.toAppProfile() = AppUserProfile(
+private fun KmpSupabaseAuthUser.toAppProfile() = AppUserProfile(
     email = email, name = displayName, avatarUrl = avatarUrl,
 )
 ```
 
 ### The library owns identity, your app owns everything else
 
-`AuthUser` is `id`, `email`, `displayName`, `avatarUrl`, `provider`, `isAnonymous` — and stops
+`KmpSupabaseAuthUser` is `id`, `email`, `displayName`, `avatarUrl`, `provider`, `isAnonymous` — and stops
 there. Profile rows, preferences and **entitlements** stay with the app.
 
 If you need "is this user a subscriber?" alongside the session, derive it at read time rather than
@@ -245,9 +245,9 @@ commonMain.dependencies {
 
 ```kotlin
 @Composable
-fun AuthRoute(client: SupabaseAuthClient, onSignedIn: () -> Unit) {
-    val google = rememberGoogleSignIn(client, onError = { /* surface it */ })
-    val apple  = rememberAppleSignIn(client, onError = { /* surface it */ })
+fun AuthRoute(client: KmpSupabaseAuthClient, onSignedIn: () -> Unit) {
+    val google = rememberKmpSupabaseGoogleSignIn(client, onError = { /* surface it */ })
+    val apple  = rememberKmpSupabaseAppleSignIn(client, onError = { /* surface it */ })
 
     AuthScreen(
         onGoogle = { google.launch() },
@@ -256,8 +256,8 @@ fun AuthRoute(client: SupabaseAuthClient, onSignedIn: () -> Unit) {
 }
 ```
 
-Or use `SupabaseAuthViewModel` (`state: StateFlow<SupabaseAuthUiState>` plus `continueAsGuest()`,
-`signInWithFallback()`, `signOut()`, `dismissError()`), bound by `supabaseAuthComposeModule()`.
+Or use `KmpSupabaseAuthViewModel` (`state: StateFlow<KmpSupabaseAuthUiState>` plus `continueAsGuest()`,
+`signInWithFallback()`, `signOut()`, `dismissError()`), bound by `kmpSupabaseAuthComposeModule()`.
 
 ### Success is `isAuthenticated`, not the callback
 
@@ -277,7 +277,7 @@ authRepository.session.collect { if (it.isAuthenticated) onSignedIn() }
 
 ## Three states, not two
 
-`AuthSession` distinguishes three cases, and conflating them causes real bugs:
+`KmpSupabaseAuthSession` distinguishes three cases, and conflating them causes real bugs:
 
 | | `isSignedOut` | `isGuest` | `isAuthenticated` |
 |---|---|---|---|
@@ -320,13 +320,13 @@ The web fallback on iOS opens the **external Safari app**
 Log the resolved paths at startup so a misconfiguration is visible before App Review is:
 
 ```kotlin
-println(diagnoseSignInPaths(config).format())
-// SupabaseAuth sign-in paths on IOS:
+println(diagnoseKmpSupabaseSignInPaths(config).format())
+// KmpSupabaseAuth sign-in paths on IOS:
 //   GOOGLE -> WEB_FALLBACK (googleWebClientId is blank, so googleNativeLogin() is never installed …)
 //   APPLE  -> NATIVE (ASAuthorizationController)
 ```
 
-`SignInPathReport.webFallbacks` is assertable in a test, so "Google must be native on iOS" can be a
+`KmpSupabaseSignInPathReport.webFallbacks` is assertable in a test, so "Google must be native on iOS" can be a
 CI failure instead of a store rejection.
 
 ---
@@ -407,7 +407,7 @@ Services ID indefinitely.
 | AV-5 | client secret unexpired | `invalid_client` on a date you did not choose |
 | AV-6 | secret claims match team / Services ID / key id | also `invalid_client` — indistinguishable from expiry without this check |
 
-On non-Apple platforms `signInWithFallback(AuthProvider.APPLE)` runs the GoTrue web round-trip, and
+On non-Apple platforms `signInWithFallback(KmpSupabaseAuthProvider.APPLE)` runs the GoTrue web round-trip, and
 on iOS it opens a **Safari View Controller** rather than an embedded WebView — which is what Apple's
 review guidance expects. Don't replace it with a custom WebView.
 
@@ -416,7 +416,7 @@ review guidance expects. Don't replace it with a custom WebView.
 Turn the library's own logging on first — it prints the decisions, never credentials:
 
 ```kotlin
-if (BuildConfig.DEBUG) SupabaseAuthLog.handler = { Log.d("SupabaseAuth", it) }
+if (BuildConfig.DEBUG) KmpSupabaseAuthLog.handler = { Log.d("KmpSupabaseAuth", it) }
 ```
 
 Then read the trail:
@@ -431,7 +431,7 @@ Then read the trail:
 
 Do **not** raise supabase-kt's own log level to `DEBUG` to chase this. It logs the entire
 `UserSession`, access and refresh tokens included, straight into your terminal and any log
-aggregator — a real credential leak that outlives the debugging session. `SupabaseAuthLog` exists
+aggregator — a real credential leak that outlives the debugging session. `KmpSupabaseAuthLog` exists
 precisely so you never have to.
 
 ---

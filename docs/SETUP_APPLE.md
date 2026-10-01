@@ -45,7 +45,7 @@ Xcode: add the **Sign in with Apple** capability to the target. This writes the
    - Return URLs: `https://<your-project-ref>.supabase.co/auth/v1/callback`
 3. Save.
 
-This identifier is `appleServiceId` in `SupabaseAuthConfig`, and the **Client ID** in Supabase's
+This identifier is `appleServiceId` in `KmpSupabaseAuthConfig`, and the **Client ID** in Supabase's
 Apple provider config.
 
 ## 3. Sign in with Apple key
@@ -98,7 +98,7 @@ needed — which is why it is so easy to forget until it breaks.
 - Save.
 
 **Authentication → URL Configuration → Redirect URLs**: add `myapp://login-callback`, matching
-`SupabaseAuthConfig.redirectUrl` exactly.
+`KmpSupabaseAuthConfig.redirectUrl` exactly.
 
 ## 7. Per-platform callback wiring
 

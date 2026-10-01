@@ -1,7 +1,7 @@
 package io.github.mobilebytelabs.supabaseauth
 
 /** Which provider established the current session. */
-public enum class AuthProvider { GOOGLE, APPLE, ANONYMOUS, EMAIL, OTHER }
+public enum class KmpSupabaseAuthProvider { GOOGLE, APPLE, ANONYMOUS, EMAIL, OTHER }
 
 /**
  * Provider-neutral identity. Identity ONLY — no app profile data.
@@ -13,11 +13,11 @@ public enum class AuthProvider { GOOGLE, APPLE, ANONYMOUS, EMAIL, OTHER }
  * Deliberately free of Supabase types so a feature module can depend on this without pulling
  * `auth-kt` onto its compile path.
  */
-public data class AuthUser(
+public data class KmpSupabaseAuthUser(
     val id: String,
     val email: String? = null,
     val displayName: String? = null,
     val avatarUrl: String? = null,
-    val provider: AuthProvider = AuthProvider.OTHER,
+    val provider: KmpSupabaseAuthProvider = KmpSupabaseAuthProvider.OTHER,
     val isAnonymous: Boolean = false,
 )

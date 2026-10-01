@@ -14,12 +14,12 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The store must mirror the client WITHOUT the consumer calling [AuthSessionStore.start].
+ * The store must mirror the client WITHOUT the consumer calling [KmpSupabaseAuthSessionStore.start].
  *
- * Regression (device-verified 2026-10-01, mbs/cappy): `supabaseAuthStore()` built a
- * `DefaultAuthSessionStore` and never started it, and nothing else in the library did either
- * (`grep '\.start('` over both modules returned zero hits). `AuthRepository.session` therefore sat
- * at [AuthSession.SignedOut] for the life of the process while the underlying GoTrue client was
+ * Regression (device-verified 2026-10-01, mbs/cappy): `kmpSupabaseAuthStore()` built a
+ * `DefaultKmpSupabaseAuthSessionStore` and never started it, and nothing else in the library did either
+ * (`grep '\.start('` over both modules returned zero hits). `KmpSupabaseAuthRepository.session` therefore sat
+ * at [KmpSupabaseAuthSession.SignedOut] for the life of the process while the underlying GoTrue client was
  * fully `Authenticated` — Google sign-in completed, the session was imported and persisted, and the
  * app still showed "Signing in…" forever and "You're a guest right now" in settings.
  *
@@ -28,15 +28,15 @@ import kotlin.test.assertTrue
  * These tests pin the store as self-starting so the lifecycle cannot be forgotten again.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class AuthSessionStoreStartTest {
+class KmpSupabaseAuthSessionStoreStartTest {
 
     @Test
     fun mirrorsTheClientWithoutAnExplicitStart() = runTest {
-        val client = FakeSupabaseAuthClient()
-        val store: AuthSessionStore = DefaultAuthSessionStore(client, backgroundScope)
+        val client = FakeKmpSupabaseAuthClient()
+        val store: KmpSupabaseAuthSessionStore = DefaultKmpSupabaseAuthSessionStore(client, backgroundScope)
         runCurrent()
 
-        client.emit(AuthUser(id = "u1", email = "a@b.test"))
+        client.emit(KmpSupabaseAuthUser(id = "u1", email = "a@b.test"))
         runCurrent()
 
         assertTrue(store.isSignedIn.value, "store must observe the client with no start() call")
@@ -48,13 +48,13 @@ class AuthSessionStoreStartTest {
     /** `start()` stays on the interface, so calling it must not double-subscribe or reset state. */
     @Test
     fun anExplicitStartIsIdempotent() = runTest {
-        val client = FakeSupabaseAuthClient()
-        val store: AuthSessionStore = DefaultAuthSessionStore(client, backgroundScope)
+        val client = FakeKmpSupabaseAuthClient()
+        val store: KmpSupabaseAuthSessionStore = DefaultKmpSupabaseAuthSessionStore(client, backgroundScope)
         store.start(backgroundScope)
         store.start(backgroundScope)
         runCurrent()
 
-        client.emit(AuthUser(id = "u2"))
+        client.emit(KmpSupabaseAuthUser(id = "u2"))
         runCurrent()
 
         assertEquals("u2", store.user.value?.id)
@@ -63,26 +63,26 @@ class AuthSessionStoreStartTest {
 
     @Test
     fun signedOutEmissionClearsTheSession() = runTest {
-        val client = FakeSupabaseAuthClient()
-        val store: AuthSessionStore = DefaultAuthSessionStore(client, backgroundScope)
+        val client = FakeKmpSupabaseAuthClient()
+        val store: KmpSupabaseAuthSessionStore = DefaultKmpSupabaseAuthSessionStore(client, backgroundScope)
         runCurrent()
 
-        client.emit(AuthUser(id = "u1"))
+        client.emit(KmpSupabaseAuthUser(id = "u1"))
         runCurrent()
         client.emit(null)
         runCurrent()
 
         assertNull(store.user.value)
-        assertEquals(AuthSession.SignedOut, store.session.value)
+        assertEquals(KmpSupabaseAuthSession.SignedOut, store.session.value)
     }
 }
 
-private class FakeSupabaseAuthClient : SupabaseAuthClient {
-    private val users = MutableStateFlow<AuthUser?>(null)
+private class FakeKmpSupabaseAuthClient : KmpSupabaseAuthClient {
+    private val users = MutableStateFlow<KmpSupabaseAuthUser?>(null)
     var collectorCount = 0
         private set
 
-    fun emit(user: AuthUser?) {
+    fun emit(user: KmpSupabaseAuthUser?) {
         users.value = user
     }
 
@@ -90,8 +90,8 @@ private class FakeSupabaseAuthClient : SupabaseAuthClient {
     override val raw: SupabaseClient? = null
     override val sessionStatus: Flow<SessionStatus>? = null
 
-    override val currentUser: Flow<AuthUser?> = object : Flow<AuthUser?> {
-        override suspend fun collect(collector: kotlinx.coroutines.flow.FlowCollector<AuthUser?>) {
+    override val currentUser: Flow<KmpSupabaseAuthUser?> = object : Flow<KmpSupabaseAuthUser?> {
+        override suspend fun collect(collector: kotlinx.coroutines.flow.FlowCollector<KmpSupabaseAuthUser?>) {
             collectorCount++
             users.collect(collector)
         }

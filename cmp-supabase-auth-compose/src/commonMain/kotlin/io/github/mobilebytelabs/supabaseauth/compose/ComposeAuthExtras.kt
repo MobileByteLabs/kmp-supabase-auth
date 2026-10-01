@@ -4,8 +4,8 @@ import io.github.jan.supabase.SupabaseClientBuilder
 import io.github.jan.supabase.compose.auth.ComposeAuth
 import io.github.jan.supabase.compose.auth.appleNativeLogin
 import io.github.jan.supabase.compose.auth.googleNativeLogin
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthLog
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 
 /**
  * Installs the ComposeAuth plugin — the native-sign-in half of the client configuration.
@@ -21,8 +21,8 @@ import io.github.mobilebytelabs.supabaseauth.SupabaseAuthLog
  *         when (id) {
  *             config.projectRef -> {
  *                 {
- *                     supabaseAuthExtras(config)(this)          // Auth
- *                     supabaseComposeAuthExtras(config)(this)   // ComposeAuth
+ *                     kmpSupabaseAuthExtras(config)(this)          // Auth
+ *                     kmpSupabaseComposeAuthExtras(config)(this)   // ComposeAuth
  *                 }
  *             }
  *             else -> { {} }
@@ -35,8 +35,8 @@ import io.github.mobilebytelabs.supabaseauth.SupabaseAuthLog
  * only; every other target falls back to `auth-kt`'s OAuth flow automatically. Declaring both
  * unconditionally is therefore correct — the plugin selects the path per platform.
  */
-public fun supabaseComposeAuthExtras(
-    config: SupabaseAuthConfig,
+public fun kmpSupabaseComposeAuthExtras(
+    config: KmpSupabaseAuthConfig,
     googleNative: Boolean = true,
     appleNative: Boolean = true,
 ): SupabaseClientBuilder.() -> Unit = {
@@ -48,23 +48,23 @@ public fun supabaseComposeAuthExtras(
         // ACTUALLY take, at the moment the decision is made. A blank client id silently demotes
         // Google to the browser fallback, and nothing downstream reports that.
         if (googleNative && config.hasGoogleNative) {
-            SupabaseAuthLog.log {
-                "install: GOOGLE native (serverClientId=${SupabaseAuthLog.redacted(config.googleWebClientId)})"
+            KmpSupabaseAuthLog.log {
+                "install: GOOGLE native (serverClientId=${KmpSupabaseAuthLog.redacted(config.googleWebClientId)})"
             }
             googleNativeLogin(serverClientId = config.googleWebClientId)
         } else {
-            SupabaseAuthLog.log {
+            KmpSupabaseAuthLog.log {
                 "install: GOOGLE native SKIPPED — " +
                     if (!googleNative) "googleNative=false" 
-                    else "googleWebClientId is ${SupabaseAuthLog.redacted(config.googleWebClientId)}" +
+                    else "googleWebClientId is ${KmpSupabaseAuthLog.redacted(config.googleWebClientId)}" +
                         " → sign-in will use the web OAuth fallback"
             }
         }
         if (appleNative) {
-            SupabaseAuthLog.log { "install: APPLE native (iOS only; web fallback elsewhere)" }
+            KmpSupabaseAuthLog.log { "install: APPLE native (iOS only; web fallback elsewhere)" }
             appleNativeLogin()
         } else {
-            SupabaseAuthLog.log { "install: APPLE native SKIPPED — appleNative=false" }
+            KmpSupabaseAuthLog.log { "install: APPLE native SKIPPED — appleNative=false" }
         }
     }
 }
