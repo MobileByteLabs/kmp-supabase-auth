@@ -27,6 +27,16 @@ public sealed class AuthError(message: String, cause: Throwable? = null) : Excep
     /** Supabase credentials are placeholders, or the provider was never configured. */
     public data object NotConfigured : AuthError("Supabase auth is not configured")
 
+    /**
+     * The provider was launched and never answered — no success, no error, no cancellation.
+     *
+     * Distinct from [Unknown], which means something failed and we could not classify it. This
+     * means nothing came back AT ALL, which points at configuration rather than a runtime fault:
+     * most often the build's signing certificate is not registered against the OAuth client, so
+     * Credential Manager finds no usable credential and returns silently.
+     */
+    public data object NoResponse : AuthError("The sign-in provider did not respond")
+
     /** Anything else. */
     public class Unknown(cause: Throwable? = null) : AuthError("Unknown sign-in error", cause)
 }

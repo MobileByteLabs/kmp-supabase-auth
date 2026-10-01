@@ -5,6 +5,7 @@ import io.github.jan.supabase.compose.auth.ComposeAuth
 import io.github.jan.supabase.compose.auth.appleNativeLogin
 import io.github.jan.supabase.compose.auth.googleNativeLogin
 import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.SupabaseAuthLog
 
 /**
  * Installs the ComposeAuth plugin — the native-sign-in half of the client configuration.
@@ -43,11 +44,27 @@ public fun supabaseComposeAuthExtras(
         // Blank client id => skip the native flow and let the OAuth redirect handle it.
         // Half-configuring native fails at runtime with an opaque provider error; skipping it
         // degrades to a path that actually works.
+        // The single most valuable line in this library's logs: it says which path the app will
+        // ACTUALLY take, at the moment the decision is made. A blank client id silently demotes
+        // Google to the browser fallback, and nothing downstream reports that.
         if (googleNative && config.hasGoogleNative) {
+            SupabaseAuthLog.log {
+                "install: GOOGLE native (serverClientId=${SupabaseAuthLog.redacted(config.googleWebClientId)})"
+            }
             googleNativeLogin(serverClientId = config.googleWebClientId)
+        } else {
+            SupabaseAuthLog.log {
+                "install: GOOGLE native SKIPPED — " +
+                    if (!googleNative) "googleNative=false" 
+                    else "googleWebClientId is ${SupabaseAuthLog.redacted(config.googleWebClientId)}" +
+                        " → sign-in will use the web OAuth fallback"
+            }
         }
         if (appleNative) {
+            SupabaseAuthLog.log { "install: APPLE native (iOS only; web fallback elsewhere)" }
             appleNativeLogin()
+        } else {
+            SupabaseAuthLog.log { "install: APPLE native SKIPPED — appleNative=false" }
         }
     }
 }
