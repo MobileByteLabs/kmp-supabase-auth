@@ -27,18 +27,10 @@ run-name: "📚 Docs refresh · ${{ github.event.pull_request.title || github.re
 # JDK, no Gradle, no network — so this job takes seconds and cannot be broken by a toolchain bump.
 
 on:
-  pull_request:
-    paths:
-      - 'cmp-*/build.gradle.kts'
-      - 'cmp-*/api/**'
-      - 'gradle.properties'
-      - 'gradle/libs.versions.toml'
-      - 'settings.gradle.kts'
-      - 'scripts/docs/**'
-      - 'README.md'
-      - 'TARGET_MATRIX.md'
-      - 'docs/**'
-      - '.github/workflows/docs-refresh.yml'
+  # NO pull_request trigger. Every job here is gated `!= 'pull_request'` — refreshing docs LANDS
+  # A COMMIT, which a PR (and especially a fork PR, with no write access) must not do. With the
+  # drift check moved into pr-check.yml's single `docs` job, a PR trigger left this workflow firing
+  # only to skip: two permanent "skipping" rows on every pull request, for zero work.
   push:
     branches: [dev]
     paths:
