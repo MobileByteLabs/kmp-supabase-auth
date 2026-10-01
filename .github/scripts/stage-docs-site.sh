@@ -24,7 +24,10 @@ for f in docs/*.md; do
 done
 
 # Root-level docs, at their repo paths.
-cp README.md TARGET_MATRIX.md CONTRIBUTING.md "$OUT/"
+# CHANGELOG included: it is the ONE document allowed to name versions (every other page defers to
+# the Maven Central badge), so it is where the docs point a reader asking "which release changed
+# this?" — a link the site must therefore be able to resolve.
+cp README.md TARGET_MATRIX.md CONTRIBUTING.md CHANGELOG.md "$OUT/"
 [ -f LICENSE ] && cp LICENSE "$OUT/"
 [ -f CODE_OF_CONDUCT.md ] && cp CODE_OF_CONDUCT.md "$OUT/"
 

@@ -18,12 +18,20 @@ Each layer only depends on the one beneath it, so building upward means every st
 the next begins. Going the other way — starting at the UI — leaves you holding a sign-in screen
 with no session behind it, and a failure at the bottom then surfaces as a confusing error at the top.
 
-| Layer | What it gains | Can you stop here? |
-|---|---|---|
-| `core/network` | the client has `Auth` + `ComposeAuth` installed | Yes — nothing consumes it yet |
-| `core/store` | session state as a `StateFlow` | Yes |
-| `core/data` | a repository your app's own code can depend on | Yes — headless apps stop here |
-| `feature/auth` | sign-in UI | — |
+| Step | Layer | What it gains | Can you stop here? |
+|---|---|---|---|
+| 0.5 | `app-profile/` | the access point + its secrets exist and generate | No — nothing below works |
+| 1 | `core/network` | the client has `Auth` + `ComposeAuth` installed | Yes — nothing consumes it yet |
+| 2 | `core/store` | session state as a `StateFlow` | Yes |
+| 3 | `core/data` | a repository your app's own code can depend on | Yes — headless apps stop here |
+| 4 | `feature/auth` | sign-in UI | Yes — if nothing else shows account state |
+| 5 | `cmp-navigation` | the app shell reads the session (account row, sign-out) | Yes |
+| 6 | platform | OAuth callback + debug diagnostics | Yes — native-only apps may skip the callback |
+| 7 | server | identity row, trigger, RLS — the half that makes sign-in *useful* | **No** |
+
+Step 7 is the one that cannot be skipped and is most often missed: every client-side step can be
+perfect while a signed-in user lands in an empty app, because the provider reports `enabled` and
+GoTrue happily creates a user with nowhere to put it.
 
 ---
 
@@ -43,6 +51,36 @@ fun interface SupabaseExtrasProvider {
 `supabaseApi(...)` binding hands `@ApiBinding` types an unauthenticated instance and every
 RLS-gated call resolves no `auth.uid()` — while compiling cleanly. The template's own KDoc warns
 about this; the library exists partly to make the correct path the easy one.
+
+---
+
+## Upgrading from 0.1.x
+
+Every public symbol now carries the `KmpSupabaseAuth*` / `kmpSupabaseAuth*` prefix — see the
+[CHANGELOG](/CHANGELOG.md) for the release that introduced it. Artifact coordinates
+(`io.github.mobilebytelabs:cmp-supabase-auth`) and the package
+(`io.github.mobilebytelabs.supabaseauth`) are unchanged — only symbol names move, so the upgrade is
+a mechanical find-and-replace with no dependency edit.
+
+| before | after |
+|---|---|
+| `AuthSession` · `AuthUser` · `AuthError` · `AuthProvider` · `AuthPhase` | `KmpSupabaseAuthSession` · `…User` · `…Error` · `…Provider` · `…Phase` |
+| `AuthRepository` · `AuthSessionStore` | `KmpSupabaseAuthRepository` · `KmpSupabaseAuthSessionStore` |
+| `SupabaseAuthClient` · `SupabaseAuthConfig` · `SupabaseAuthLog` | `KmpSupabaseAuthClient` · `…Config` · `…Log` |
+| `SupabaseSignInButton` · `GoogleSignInButton` · `AppleSignInButton` | `KmpSupabaseSignInButton` · `KmpSupabaseGoogleSignInButton` · `KmpSupabaseAppleSignInButton` |
+| `rememberSignIn` · `rememberGoogleSignIn` | `rememberKmpSupabaseSignIn` · `rememberKmpSupabaseGoogleSignIn` |
+| `supabaseAuthNetwork` · `supabaseAuthStore` · `supabaseAuthRepository` | `kmpSupabaseAuthNetwork` · `kmpSupabaseAuthStore` · `kmpSupabaseAuthRepository` |
+
+The reason is collision: the bare names are exactly what an app calls its own auth layer. In a real
+consumer the SAME library type was imported under THREE different aliases across four files purely
+to dodge the clash; after the rename it declares none.
+
+**Two behaviour changes come with it**, both covered in Step 4 and neither caught by the compiler:
+
+- the provider buttons are **self-wired** — they no longer take a launcher you built, and they must
+  stay MOUNTED during sign-in;
+- `onClick` is no longer the first positional parameter, so an existing positional call will not
+  compile — which is the good case. Check every `onError` is passed.
 
 ---
 
@@ -68,6 +106,41 @@ repositories {
 `cmp-supabase-auth-compose` pulls in Compose Multiplatform, whose transitive AndroidX dependencies
 (`androidx.savedstate`, `androidx.lifecycle-*`) are published **only** to Google's Maven repository.
 The headless module resolves from `mavenCentral()` alone.
+
+---
+
+## Step 0.5 — `app-profile/` : declare the access point and its secrets
+
+This is the true bottom of the chain, and it is template machinery rather than library API — but
+`core/network` cannot be wired without it, so it comes first.
+
+The template declares every endpoint ONCE in `app-profile/app.yaml`, and `./gradlew syncForkConfig`
+generates `AppAccessPoints` + `AppSupabaseAnonKeys` from it. You never hand-write a client, a URL or
+a key:
+
+```yaml
+# app-profile/app.yaml
+network:
+  access_points:
+    - id: <your-supabase-project-ref>     # this id IS the access-point key used in Step 1
+      type: supabase
+      base_url: https://<ref>.supabase.co
+```
+
+```bash
+./gradlew syncForkConfig      # regenerates AppAccessPoints / AppSupabaseAnonKeys
+```
+
+The credentials come from the vault, not from the YAML — `<proj>-supabase-url`,
+`<proj>-supabase-anon-key`, plus `<proj>-google-oauth-web-client-id` for Google. Materialize with
+`/secrets pull`. Two traps worth naming:
+
+- **The URL and the anon key must belong to the SAME project.** The anon key is a JWT whose `ref`
+  claim names its project; pairing a new URL with an old key yields `Invalid API key` at startup
+  and nothing more specific. Decode the `ref` and compare — it is public, unlike the key itself.
+- **`.env` files are not the mechanism here.** Secrets materialize to `local.properties` /
+  `secrets/live/**` via the layout; a hand-written `.env` will be ignored by the build and is a
+  gate violation besides.
 
 ---
 
@@ -243,21 +316,123 @@ commonMain.dependencies {
 }
 ```
 
+The three buttons are **self-wired**: pressing one runs the whole flow. You supply a typed action
+for your own state machine and nothing else — no launcher to remember, no client to thread, no
+scope to own. `client` and `repository` default to `koinInject()`.
+
 ```kotlin
 @Composable
-fun AuthRoute(client: KmpSupabaseAuthClient, onSignedIn: () -> Unit) {
-    val google = rememberKmpSupabaseGoogleSignIn(client, onError = { /* surface it */ })
-    val apple  = rememberKmpSupabaseAppleSignIn(client, onError = { /* surface it */ })
+fun AuthRoute(onError: (KmpSupabaseAuthError) -> Unit) {
+    // Owned by the SCREEN, not the button — see "Keep the buttons mounted" below.
+    val authScope = rememberCoroutineScope()
 
-    AuthScreen(
-        onGoogle = { google.launch() },
-        onApple  = { apple.launch() },
+    KmpSupabaseGoogleSignInButton(scope = authScope, onError = onError)
+    KmpSupabaseAppleSignInButton(scope = authScope, onError = onError)
+    KmpSupabaseContinueAsGuestButton(onError = onError)
+}
+```
+
+That is the whole integration. `onClick` is optional on all three — it is a hook for the app's own
+side effects (a typed action for your state machine, an analytics event, a local "proceed"), and it
+runs BEFORE the flow starts.
+
+<details>
+<summary>Example — wired to an MVI state machine (<code>mbs/cappy</code>)</summary>
+
+```kotlin
+KmpSupabaseGoogleSignInButton(
+    onClick = { onAction(SignInAction.SignInGoogle) },   // app's own typed action
+    modifier = Modifier.testTag(TestTags.Login.GOOGLE_BUTTON),
+    enabled  = cloudConfigured && !signingIn,            // stays MOUNTED while signing in
+    scope    = authScope,
+    onError  = onAuthError,                              // maps to Dismissed / Offline / Failed
+)
+KmpSupabaseContinueAsGuestButton(
+    onClick   = { onAction(SignInAction.ContinueOffline) },  // local-first: runs FIRST
+    prominent = true,                                        // app's brand call, themed by MaterialTheme
+    onError   = onAuthError,
+)
+```
+
+`onAuthError` is the app's mapping from the library's error taxonomy onto its own states:
+
+```kotlin
+val onAuthError: (KmpSupabaseAuthError) -> Unit = { error ->
+    viewModel.trySendAction(
+        when (error) {
+            is KmpSupabaseAuthError.Cancelled -> SignInAction.SignInDismissed
+            is KmpSupabaseAuthError.Network   -> SignInAction.SignInOffline
+            else                              -> SignInAction.SignInFailed
+        },
     )
 }
 ```
 
-Or use `KmpSupabaseAuthViewModel` (`state: StateFlow<KmpSupabaseAuthUiState>` plus `continueAsGuest()`,
-`signInWithFallback()`, `signOut()`, `dismissError()`), bound by `kmpSupabaseAuthComposeModule()`.
+</details>
+
+`KmpSupabaseSignInButton(provider)` dispatches to whichever of the three matches, including
+`ANONYMOUS`. Or take the whole screen: `KmpSupabaseLoginScreen`, backed by
+`KmpSupabaseAuthViewModel` (`state: StateFlow<KmpSupabaseAuthUiState>`), bound by
+`kmpSupabaseAuthComposeModule()`.
+
+### ALWAYS pass `onError` — or the screen hangs
+
+`onError` defaults to a no-op, and that default is the single easiest way to ship a broken sign-in.
+Every failure the library detects — a dismissed sheet (`Cancelled`), `Network`, `ProviderRejected`,
+and the no-response watchdog's `NoResponse` — is reported THROUGH `onError`. Drop it and your
+"signing in" state has no exit: the spinner runs forever with nothing in the logs.
+
+This is not hypothetical. It shipped in a consumer, as "sometimes Google gets stuck on the progress
+bar", because the error callback was defined and simply never passed to the buttons.
+
+### Keep the buttons mounted while signing in
+
+Each provider button remembers a `LaunchedEffect` (that is what `rememberSignInWithGoogle` installs).
+**Swapping the buttons out for a spinner disposes that effect in the same recomposition that started
+the flow** — `startFlow()` then runs against an effect that no longer exists, so no sheet appears, no
+callback arrives, and the screen sits on "Signing in…" forever.
+
+Render the same body for idle AND in-progress; disable the buttons instead of removing them:
+
+```kotlin
+when (state.phase) {
+    Phase.Idle, Phase.SigningIn -> SignInBody(signingIn = state.phase == Phase.SigningIn)
+    Phase.Error                 -> ErrorBody()
+}
+// inside SignInBody: enabled = !signingIn, with the progress shown alongside
+```
+
+`scope` is the related half: it is where the no-response watchdog runs, so it must outlive the
+button for the same reason. Pass a screen-owned scope.
+
+Guest and sign-out are deliberately different — they run on a DETACHED scope the library owns,
+because pressing them usually navigates away and tears down the composition mid-request. The
+provider watchdogs keep the composition scope, because those SHOULD die with their attempt.
+
+### Reading who is signed in
+
+Do not re-derive it. `rememberKmpSupabaseAuthState()` is the live read, resolved from DI:
+
+```kotlin
+val auth = rememberKmpSupabaseAuthState()
+if (auth.hasNoAccount) SignInPrompt(onClick = { /* … */ })
+```
+
+| Read | True when |
+|---|---|
+| `isSignedIn` | any session — anonymous or a real account |
+| `isAuthenticated` | a real provider account |
+| `isGuest` | an **anonymous** session specifically — false when signed out |
+| `hasNoAccount` | anonymous **OR** signed out — what a "sign in to save your progress" prompt wants |
+
+The last two are the ones that get confused. `isGuest` alone hides the prompt from the
+never-signed-in person it is most aimed at. Consumers were each writing
+`authRepository.isAuthenticated.map { !it }.collectAsStateWithLifecycle(initialValue = true)` —
+three decisions buried in one line, spelled differently at each call site, and the
+`initialValue = true` renders a one-frame guest state for a signed-in user. `session` is a
+`StateFlow` with a real current value, so no initial is needed.
+
+Sign-out is wired too: `val signOut = rememberKmpSupabaseSignOut()`.
 
 ### Success is `isAuthenticated`, not the callback
 
@@ -272,6 +447,115 @@ authRepository.session.collect { if (it.isAuthenticated) onSignedIn() }
 ```
 
 `onError` is still worth wiring: `Cancelled`, `Network` and `ProviderRejected` do fire reliably.
+
+---
+
+## Step 5 — `cmp-navigation` : the app shell
+
+The rung above the feature, and the one most often forgotten — the template's nav seam renders the
+Settings account row and the sign-out control, so it reads auth state too.
+
+Read it, do not re-derive it:
+
+```kotlin
+// any nav destination that shows an account row
+val auth    = rememberKmpSupabaseAuthState()
+val signOut = rememberKmpSupabaseSignOut()
+
+SettingsScreen(
+    hasNoAccount = auth.hasNoAccount,    // NOT !auth.isGuest — see "Three states"
+    userName     = auth.user?.displayName,
+    userEmail    = auth.user?.email,
+    onSignOut    = { signOut() },
+)
+```
+
+<details>
+<summary>Example — the same seam in a real fork (<code>mbs/cappy</code>)</summary>
+
+The template's registries are where a fork's destinations are declared, so this is where the read
+lands in practice. Note the parameter is named `isGuest` by the screen but fed `hasNoAccount`: the
+screen's question is "is there no real account here?", which is what that predicate answers.
+
+```kotlin
+// cmp-navigation/registry/BackboneRegistry.kt
+val auth    = rememberKmpSupabaseAuthState()
+val signOut = rememberKmpSupabaseSignOut()
+
+CappyPreferencesScreen(
+    isGuest         = auth.hasNoAccount,
+    userName        = auth.user?.displayName,
+    userEmail       = auth.user?.email,
+    onSignOut       = { signOut() },
+    onNavigateToSignIn = { navController.navigateToCloudSignIn() },
+)
+```
+
+</details>
+
+On a real migration this seam held the worst of the drift: two registries each injected the
+repository and hand-derived `!isAuthenticated`, and the SAME library type was imported under three
+different aliases across four files. One live read removes all of it.
+
+A seam that is NOT composable (a `NavGraphBuilder` extension, where `remember*` cannot be called)
+resolves lazily instead — `koin.get<KmpSupabaseAuthRepository>()` inside the lambda. That is the one
+place reaching for the repository directly is still right.
+
+---
+
+## Step 6 — there is no platform step: it is fully commonMain
+
+**Every line in Steps 0.5–5 is commonMain.** That is a deliberate property of the library, not a
+coincidence of this guide:
+
+| Module | commonMain | platform |
+|---|---|---|
+| `cmp-supabase-auth-compose` | 16 files — buttons, launchers, state, actions, ViewModel | **none** |
+| `cmp-supabase-auth` | 16 files — client, repository, store, session, config, log | 2 (Android callback activity) + 1 no-op for everything else |
+
+So the per-platform work is the LIBRARY's, behind `expect`/`actual`:
+
+- `KmpSupabaseGoogleSignInButton` is one commonMain composable that resolves to Credential Manager
+  on Android, native on iOS, and the GoTrue web redirect on desktop/web.
+- The Android OAuth-callback activity ships **in the library's own `AndroidManifest.xml`** and
+  merges into your app automatically — no manifest entry, no activity, no intent filter to declare.
+  Other platforms get a no-op `actual` from `noCallbackMain`.
+
+What you supply stays commonMain data: the scheme/host in `KmpSupabaseAuthConfig(redirectUrl = …)`,
+matching a `uri_allow_list` entry on the backend. (Native Google and native Apple-on-iOS never use
+the redirect; desktop, web and Android-Apple do.)
+
+**Diagnostics are commonMain too.** `KmpSupabaseAuthLog.handler` is a commonMain property, so it can
+be set in your shared init rather than per-platform:
+
+```kotlin
+// commonMain app init — `isDebug` from your own build config
+if (isDebug) KmpSupabaseAuthLog.handler = { line -> println(line) }
+```
+
+Routing it to a platform logger (`Log.d` on Android, `os_log` on iOS) is a choice, not a
+requirement — the only reason to touch a platform source set in this whole integration, and it is
+optional. This is the single highest-value line when something goes wrong; see "When it hangs". It
+logs decisions and outcomes, never credentials.
+
+---
+
+## Step 7 — the server half
+
+Enabling a provider makes sign-in **succeed**; it does not make the app **work**. GoTrue creates the
+`auth.users` row and stops. Your identity row, the RLS that scopes it, and the trigger that
+provisions it are all server-side, and their absence is invisible from the client:
+
+| Check | What breaks without it |
+|---|---|
+| identity table FK → `auth.users(id)` | sign-in creates a user with nowhere to land |
+| `AFTER INSERT ON auth.users` trigger | orphaned users, permanently, invisibly |
+| RLS + `auth.uid()` policies on every auth-scoped table | every signed-in user can read every row |
+| anonymous enabled, if you offer guest | the guest button does nothing (GV-4b) |
+
+Never substitute client-side row creation: a client that crashes or loses network between sign-in
+and insert leaves an orphan forever, and every gate still passes. `/idea-auth` drives these as
+SC-A..SC-E and can emit the trigger migration for you.
 
 ---
 
@@ -297,6 +581,32 @@ that spans signed-out **and** anonymous, so the predicate is **`!isAuthenticated
 `isGuest`. On a real migration, four call sites had `!isGuest` meaning "not signed in"; under the
 correct semantics two became live bugs (a `SignInSucceeded` firing the moment the login screen
 opened, and a cold-start data sync for signed-out users).
+
+### The guest path needs the BACKEND switched on
+
+`KmpSupabaseContinueAsGuestButton` calls `signInAnonymously()`, which fails unless the project
+enables it:
+
+```
+Supabase → Authentication → Providers → Anonymous → enable
+```
+
+Read it back before trusting it — `external_anonymous_users_enabled` on
+`GET /v1/projects/{ref}/config/auth`. Rate limiting is a separate setting
+(`rate_limit_anonymous_users`), so enabling anonymous does not remove the abuse control.
+`/idea-auth --verify` checks this as **GV-4b** for any app that offers a guest path.
+
+Shipped with it disabled, the press does nothing visible: the session is refused and, with the
+default no-op `onError`, nothing surfaces. Install the log handler (below) and you get
+`ANONYMOUS: continueAsGuest() FAILED` naming the likely cause instead of silence.
+
+### Local-first apps: `onClick` runs BEFORE the session request
+
+The anonymous session is a network round-trip. If your app lets a guest in without one — the usual
+local-first contract — put that local "proceed" in `onClick`, which the button runs *first*. The
+guest then lands in the app with no network, and the anonymous session also lands when there is
+one, which is what later allows the guest to be UPGRADED to a real account (`linkIdentity = true`)
+rather than starting over.
 
 ---
 
@@ -428,6 +738,14 @@ Then read the trail:
 | `onResult = Success`, no session follows | GV-4/GV-5 — the audience list or nonce check rejected the token |
 | `onResult = Error: …` | the provider's own reason is printed with the cause |
 | `TIMEOUT after 60s` | nothing came back at all; treat as GV-3 |
+| `startFlow()`, then `TIMEOUT`, and **no sheet ever appeared** | the buttons were unmounted mid-flow — see "Keep the buttons mounted" |
+| `ANONYMOUS: continueAsGuest() FAILED` | usually anonymous sign-ins disabled on the project (GV-4b) |
+| `ANONYMOUS: … FAILED … ForgottenCoroutineScopeException` | a composition scope was passed to the guest launcher and the press navigated away |
+| nothing at all after pressing | `onError` was never passed — the library reported a failure into a no-op |
+
+A guest who reads as "Signed in" with no name is a different fault: the session is anonymous but
+something is flattening `isAnonymous`. Confirm server-side rather than guessing —
+`select is_anonymous from auth.users` — then check that nothing in your mapping re-derives it.
 
 Do **not** raise supabase-kt's own log level to `DEBUG` to chase this. It logs the entire
 `UserSession`, access and refresh tokens included, straight into your terminal and any log
