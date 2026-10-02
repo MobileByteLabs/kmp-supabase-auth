@@ -54,7 +54,20 @@ jobs:
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'
-      create-github-release: false          # release already exists — this workflow is triggered by it
+      # TRUE on a manual dispatch, FALSE on a release trigger — the two entry points have
+      # opposite needs and a literal `false` served only one of them.
+      #
+      # On `release:` the release is what STARTED this run, so creating one would be a
+      # duplicate. On `workflow_dispatch` nothing has created anything: the dispatch goes
+      # straight to Central and, with a literal `false`, the reusable workflow's
+      # `create-release` job is skipped — so the artifact ships with NO tag, NO release and
+      # NO changelog notes. Central is immutable, so that version can never be re-cut.
+      #
+      # Observed on v0.2.0 (run 36910691538, dispatched 2026-10-01): both modules reached
+      # Central, and `gh release list` still ended at v0.1.3. This is the same hazard
+      # publish-trigger.yml documents as its reason for keeping the push trigger disabled —
+      # the push path was closed while this one stayed open with the identical hole.
+      create-github-release: ${{ github.event_name == 'workflow_dispatch' }}
 
 
     # `inherit`, deliberately. Every credential this workflow needs already exists as an
