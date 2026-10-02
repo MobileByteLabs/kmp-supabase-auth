@@ -92,10 +92,20 @@ private fun resolveGoogle(
             reason = "googleNative = false was passed to kmpSupabaseComposeAuthExtras"
         }
 
+        // iOS is reported BEFORE the blank-client-id branch on purpose: on iOS the client id is
+        // not the reason and setting it changes nothing, so leading with "googleWebClientId is
+        // blank" would send someone to fix a field that cannot affect the outcome.
+        platform == PlatformTarget.IOS -> {
+            path = KmpSupabaseSignInPath.WEB_FALLBACK
+            reason = "iOS has no native Google path this library can deliver — the GoogleSignIn " +
+                "SDK must be in the app's own Xcode/SPM graph, and Xcode resolves that graph " +
+                "before Gradle runs. Uses ASWebAuthenticationSession in-app instead."
+        }
+
         !config.hasGoogleNative -> {
             path = KmpSupabaseSignInPath.WEB_FALLBACK
             reason = "googleWebClientId is blank, so googleNativeLogin() is never installed — " +
-                "set it to the WEB client id (not the Android or iOS one)"
+                "set it to the WEB client id (not the Android one)"
         }
 
         platform == PlatformTarget.ANDROID -> {
@@ -103,14 +113,9 @@ private fun resolveGoogle(
             reason = "Credential Manager"
         }
 
-        platform == PlatformTarget.IOS -> {
-            path = KmpSupabaseSignInPath.NATIVE
-            reason = "GoogleSignIn SDK via ComposeAuth's native bridge"
-        }
-
         else -> {
             path = KmpSupabaseSignInPath.WEB_FALLBACK
-            reason = "ComposeAuth implements native Google on Android and iOS only"
+            reason = "native Google is Android-only here; every other target uses web OAuth"
         }
     }
     return KmpSupabaseProviderSignInPath(KmpSupabaseAuthProvider.GOOGLE, path, reason)

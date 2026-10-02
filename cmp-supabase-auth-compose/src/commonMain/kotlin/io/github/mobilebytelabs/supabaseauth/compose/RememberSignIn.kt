@@ -15,7 +15,9 @@ import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -63,6 +65,20 @@ public fun rememberKmpSupabaseGoogleSignIn(
         KmpSupabaseAuthLog.log { "GOOGLE: client not configured — launcher will report NotConfigured" }
         KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.NotConfigured) }
     }
+    // Platforms with no library-deliverable native path go through the in-app web flow instead,
+    // WITHOUT touching ComposeAuth. That matters: `rememberSignInWithGoogle` would fall back to
+    // supabase-kt's own iOS redirect, which is `UIApplication.openURL` — the EXTERNAL Safari app
+    // Apple rejected under Guideline 4. See KmpSupabaseAuthClient.supportsNativeGoogle.
+    if (!client.supportsNativeGoogle) {
+        if (linkIdentity) {
+            KmpSupabaseAuthLog.log {
+                "GOOGLE: linkIdentity requested but this platform uses the web flow, which signs in " +
+                    "as a NEW session rather than linking to the current one — the request is ignored."
+            }
+        }
+        return rememberWebOAuthSignIn(KmpSupabaseAuthProvider.GOOGLE, client, watchdogScope, onError)
+    }
+
     val watchdog = remember { mutableStateOf<Job?>(null) }
     val onResult: (NativeSignInResult) -> Unit = { result ->
         watchdog.value?.cancel()
@@ -202,6 +218,51 @@ private fun NativeSignInResult.reportFailure(
         is NativeSignInResult.Error -> {
             KmpSupabaseAuthLog.logError(exception) { "$provider: onResult = Error: $message" }
             onError(KmpSupabaseAuthError.ProviderRejected(provider, exception))
+        }
+    }
+}
+
+/**
+ * Drives [KmpSupabaseAuthClient.signInWithGoogleFallback] / `signInWithAppleFallback` — the
+ * library's own in-app web OAuth leg (`ASWebAuthenticationSession` on iOS).
+ *
+ * Uses a DETACHED scope for the same measured reason as guest sign-in: presenting the sheet and
+ * then navigating on success tears down this composition, and `rememberCoroutineScope()` is
+ * cancelled at exactly that moment — which reads as "sign-in silently does nothing".
+ *
+ * No watchdog. The suspend call returns a `Result` either way, so the no-callback failure mode the
+ * watchdog exists for cannot happen here.
+ */
+@Composable
+private fun rememberWebOAuthSignIn(
+    provider: KmpSupabaseAuthProvider,
+    client: KmpSupabaseAuthClient,
+    scope: CoroutineScope?,
+    onError: (KmpSupabaseAuthError) -> Unit,
+): KmpSupabaseSignInLauncher {
+    val detachedScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    val active = scope ?: detachedScope
+    return remember(provider, client, active, onError) {
+        KmpSupabaseSignInLauncher {
+            KmpSupabaseAuthLog.log { "$provider: in-app web OAuth (no native path on this platform)" }
+            active.launch {
+                val result = when (provider) {
+                    KmpSupabaseAuthProvider.APPLE -> client.signInWithAppleFallback()
+                    else -> client.signInWithGoogleFallback()
+                }
+                result
+                    .onSuccess { KmpSupabaseAuthLog.log { "$provider: web OAuth leg completed" } }
+                    .onFailure { cause ->
+                        val error = cause as? KmpSupabaseAuthError ?: KmpSupabaseAuthError.Unknown(cause)
+                        KmpSupabaseAuthLog.logError(error.cause) {
+                            "$provider: web OAuth FAILED (${error::class.simpleName}). Check that the " +
+                                "provider is enabled in Supabase and that the app's redirect URL is " +
+                                "listed there — a missing redirect URL completes the sheet and then " +
+                                "drops the callback."
+                        }
+                        onError(error)
+                    }
+            }
         }
     }
 }

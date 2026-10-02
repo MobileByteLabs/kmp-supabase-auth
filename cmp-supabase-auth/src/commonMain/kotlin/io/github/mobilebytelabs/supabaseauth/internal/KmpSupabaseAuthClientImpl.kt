@@ -9,6 +9,7 @@ import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
+import io.github.mobilebytelabs.supabaseauth.googleNativeSupported
 import io.github.mobilebytelabs.supabaseauth.launchWebOAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -87,6 +88,8 @@ internal class KmpSupabaseAuthClientImpl(
     // the EXTERNAL browser — the Guideline 4 rejection. The iOS actual presents
     // ASWebAuthenticationSession in-app; every other platform's actual delegates straight back to
     // signInWith (and Android is already in-app via Custom Tabs).
+    override val supportsNativeGoogle: Boolean = googleNativeSupported
+
     override suspend fun signInWithAppleFallback(): Result<Unit> =
         guarded { client.launchWebOAuth(KmpSupabaseAuthProvider.APPLE, redirectUrl).getOrThrow() }
 

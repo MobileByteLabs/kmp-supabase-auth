@@ -9,13 +9,28 @@ import kotlin.test.assertTrue
 
 class KmpSupabaseAuthConfigTest {
 
+    // A configured web client id enables native Google only where the PLATFORM can deliver it.
+    // Asserting `true` unconditionally would fail on iOS — correctly, since iOS has no native path
+    // this library can ship (the GoogleSignIn SDK is outside a Maven artifact's reach). Expressing
+    // the contract against `googleNativeSupported` is what makes this test true on all 17 targets
+    // instead of only the ones that happen to agree with it.
     @Test
-    fun hasGoogleNative_isTrue_whenWebClientIdPresent() {
+    fun hasGoogleNative_followsPlatformCapability_whenWebClientIdPresent() {
         val config = KmpSupabaseAuthConfig(
             projectRef = "abcdefgh",
             googleWebClientId = "123.apps.googleusercontent.com",
         )
-        assertTrue(config.hasGoogleNative)
+        assertEquals(googleNativeSupported, config.hasGoogleNative)
+    }
+
+    // The delivery half alone is never enough — an unconfigured client id still degrades to web.
+    @Test
+    fun hasGoogleNative_isFalse_onPlatformsWithoutANativePath() {
+        if (googleNativeSupported) return
+        assertFalse(
+            KmpSupabaseAuthConfig("abcdefgh", googleWebClientId = "123.apps.googleusercontent.com")
+                .hasGoogleNative,
+        )
     }
 
     // An app mid-way through Google console setup must still build and run. Blank has to degrade

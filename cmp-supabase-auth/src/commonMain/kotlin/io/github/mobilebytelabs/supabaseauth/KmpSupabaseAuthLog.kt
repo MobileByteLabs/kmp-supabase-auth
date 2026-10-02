@@ -28,13 +28,41 @@ package io.github.mobilebytelabs.supabaseauth
 public object KmpSupabaseAuthLog {
 
     /**
-     * Where lines go. Null (the default) means logging is off and every call site short-circuits
-     * before building its message, so an app that never sets this pays nothing.
+     * Explicit sink override. Null (the default) does NOT mean silence — it means "use the
+     * build-type default", which is `println` in a DEBUG build of the host app and silence in a
+     * release one. See [isDebugBuild].
+     *
+     * Set it to route lines somewhere else (`Log.d`, Timber, a crash-reporter breadcrumb); set
+     * [silenced] to turn diagnostics off even in debug.
      */
     public var handler: ((String) -> Unit)? = null
 
-    /** True when a handler is installed. Guard expensive message construction with this. */
-    public val isEnabled: Boolean get() = handler != null
+    /** Force silence regardless of build type. For a debug build that must stay quiet. */
+    public var silenced: Boolean = false
+
+    /**
+     * The build-type default: `println` in debug, nothing in release.
+     *
+     * Logging USED to default to off on every platform, which read as a safe choice and was not:
+     * auth is the least observable part of an app from the outside, no consumer ever opted in, and
+     * a failing iOS sign-in produced a device log with zero lines about the sign-in path across
+     * four device rounds. Debug builds now explain themselves by default.
+     *
+     * `by lazy` on purpose — Android resolves [isDebugBuild] through the Application captured by a
+     * ContentProvider, so this must not be evaluated at class-init time.
+     */
+    @PublishedApi
+    internal val buildTypeDefault: ((String) -> Unit)? by lazy {
+        if (isDebugBuild) { line: String -> println(line) } else null
+    }
+
+    /** The sink actually used: explicit override, else the build-type default, unless silenced. */
+    @PublishedApi
+    internal val sink: ((String) -> Unit)?
+        get() = if (silenced) null else handler ?: buildTypeDefault
+
+    /** True when something will receive lines. Guard expensive message construction with this. */
+    public val isEnabled: Boolean get() = sink != null
 
     /**
      * Log a line, prefixed so it is greppable in a shared logcat.
@@ -45,12 +73,12 @@ public object KmpSupabaseAuthLog {
     // owns the launchers, the noisiest thing worth logging — is a separate module. Consumers may
     // also log through it, which is fine: it is a formatter, not a capability.
     public inline fun log(message: () -> String) {
-        handler?.invoke("[supabase-auth] ${message()}")
+        sink?.invoke("[supabase-auth] ${message()}")
     }
 
     /** Log a failure with its cause's TYPE and message — never a stack of app-owned values. */
     public inline fun logError(error: Throwable?, message: () -> String) {
-        handler?.invoke(
+        sink?.invoke(
             buildString {
                 append("[supabase-auth] ").append(message())
                 if (error != null) {

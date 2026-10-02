@@ -100,6 +100,7 @@ private class FakeKmpSupabaseAuthClient : KmpSupabaseAuthClient {
     override val isSignedIn: Flow<Boolean> = users.map { it != null }
 
     override suspend fun signInAnonymously(): Result<Unit> = Result.success(Unit)
+    override val supportsNativeGoogle: Boolean = googleNativeSupported
     override suspend fun signInWithAppleFallback(): Result<Unit> = Result.success(Unit)
     override suspend fun signInWithGoogleFallback(): Result<Unit> = Result.success(Unit)
     override suspend fun hasRestorableSession(): Boolean = users.value != null

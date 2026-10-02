@@ -139,6 +139,12 @@ kotlin {
         // because iosMain sits under appleMain — attaching the parent would hand iOS the default
         // actual and make the override impossible. This is the whole reason the set exists
         // separately from noCallbackMain above, which legitimately does cover all of appleMain.
+        // `isDebugBuild` has a real answer on native (Platform.isDebugBinary) and Android
+        // (the host app's FLAG_DEBUGGABLE). JVM/JS/Wasm have no portable equivalent, so they share
+        // one `false`. nativeMain + androidMain carry their own actuals from the default hierarchy.
+        val noDebugDetectMain = create("noDebugDetectMain").apply { dependsOn(getByName("commonMain")) }
+        listOf("jvmMain", "jsMain", "wasmJsMain").forEach { getByName(it).dependsOn(noDebugDetectMain) }
+
         val webOAuthDefaultMain = create("webOAuthDefaultMain").apply { dependsOn(getByName("commonMain")) }
         listOf(
             "androidMain",
