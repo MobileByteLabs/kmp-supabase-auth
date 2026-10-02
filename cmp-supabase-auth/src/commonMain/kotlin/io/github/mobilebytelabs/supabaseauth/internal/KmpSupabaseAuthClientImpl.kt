@@ -7,7 +7,9 @@ import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthUser
+import io.github.mobilebytelabs.supabaseauth.launchWebOAuth
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -17,6 +19,12 @@ internal class KmpSupabaseAuthClientImpl(
     private val client: SupabaseClient,
     private val options: KmpSupabaseAuthOptions,
     override val isConfigured: Boolean = true,
+    /**
+     * The app's own callback URL. Needed because the iOS in-app flow matches it as
+     * `ASWebAuthenticationSession`'s `callbackURLScheme`; a wrong or absent value means the sheet
+     * opens and then never completes, which is indistinguishable from the user stalling.
+     */
+    private val redirectUrl: String? = null,
 ) : KmpSupabaseAuthClient {
 
     override val raw: SupabaseClient?
@@ -75,13 +83,15 @@ internal class KmpSupabaseAuthClientImpl(
         client.auth.signInAnonymously()
     }
 
-    override suspend fun signInWithAppleFallback(): Result<Unit> = guarded {
-        client.auth.signInWith(Apple)
-    }
+    // Both route through `launchWebOAuth`, NOT `auth.signInWith`, because on iOS signInWith opens
+    // the EXTERNAL browser — the Guideline 4 rejection. The iOS actual presents
+    // ASWebAuthenticationSession in-app; every other platform's actual delegates straight back to
+    // signInWith (and Android is already in-app via Custom Tabs).
+    override suspend fun signInWithAppleFallback(): Result<Unit> =
+        guarded { client.launchWebOAuth(KmpSupabaseAuthProvider.APPLE, redirectUrl).getOrThrow() }
 
-    override suspend fun signInWithGoogleFallback(): Result<Unit> = guarded {
-        client.auth.signInWith(Google)
-    }
+    override suspend fun signInWithGoogleFallback(): Result<Unit> =
+        guarded { client.launchWebOAuth(KmpSupabaseAuthProvider.GOOGLE, redirectUrl).getOrThrow() }
 
     override suspend fun hasRestorableSession(): Boolean =
         isConfigured && runCatching { client.auth.currentSessionOrNull() != null }.getOrDefault(false)

@@ -38,6 +38,15 @@
                     android:scheme="${applicationId}" />
             </intent-filter>
         </activity>
+
+        <!-- Zero-config capture of the Application, so the OAuth tab launches from the current
+             Activity and stays in the app's task rather than getting its own recents card. -->
+        <provider
+            android:name="io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthInitProvider"
+            android:authorities="${applicationId}.kmpsupabaseauth-init"
+            android:exported="false"
+            android:initOrder="100" />
+
     </application>
 
 </manifest>

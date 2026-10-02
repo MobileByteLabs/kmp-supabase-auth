@@ -75,6 +75,7 @@ public fun kmpSupabaseAuthNetwork(
             client = supabase,
             options = get(),
             isConfigured = config.isConfigured,
+            redirectUrl = config.redirectUrl,
         )
     }
 }

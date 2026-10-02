@@ -4,6 +4,7 @@ import io.github.jan.supabase.SupabaseClientBuilder
 import io.github.jan.supabase.auth.Auth
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthOptions
+import io.github.mobilebytelabs.supabaseauth.preferInAppBrowser
 
 /**
  * The block handed to the consumer's Supabase client builder. Installs Auth + ComposeAuth onto
@@ -35,6 +36,15 @@ internal fun buildAuthExtras(
         // Safari and returns through the scheme below.
         config.oauthScheme?.let { scheme = it }
         config.oauthHost?.let { host = it }
+
+        // Keep the redirect INSIDE the app where the platform allows it (Android → Custom Tabs).
+        // supabase-kt's default is ExternalAuthAction.ExternalBrowser, so without this every web
+        // fallback ejects the user into the full browser — observed on-device as Chrome's own
+        // ChromeTabbedActivity resuming over the app. No-op on iOS/desktop/web by necessity, not
+        // by omission; see InAppBrowser.kt for the measured reason.
+        //
+        // Set BEFORE options.extraInstall so a consumer can still override it — last write wins.
+        preferInAppBrowser()
     }
     options.extraInstall(this)
 }

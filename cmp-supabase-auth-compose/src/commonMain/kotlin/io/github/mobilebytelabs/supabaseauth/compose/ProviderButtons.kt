@@ -60,6 +60,9 @@ private val FieldWhite = Color(0xFFFFFFFF)
  */
 private val ProviderOutline = Color(0xFFDADCE0)
 private val GlyphSize = 20.dp
+
+/** Apple's mark is 384:512 (3:4). 20.dp tall ⇒ 15.dp wide; forcing it square distorts it. */
+private val AppleGlyphWidth = 15.dp
 private val LabelSize = 17.sp
 
 /**
@@ -172,7 +175,10 @@ public fun KmpSupabaseAppleSignInButton(
             imageVector = kmpSupabaseAppleLogo(ink),
             contentDescription = null,
             tint = ink,
-            modifier = Modifier.size(GlyphSize),
+            // width = height * 3/4, NOT size(GlyphSize). Modifier.size() forces a square box and
+            // would stretch the mark even with the vector's defaults corrected — the two fixes are
+            // both required. Google's mark IS square, which is why ProviderIcon above is fine.
+            modifier = Modifier.size(width = AppleGlyphWidth, height = GlyphSize),
         )
         Spacer(Modifier.width(12.dp))
         Text(text, fontSize = LabelSize, fontWeight = FontWeight.Medium, color = ink)

@@ -131,6 +131,27 @@ kotlin {
         listOf("jvmMain", "appleMain", "linuxMain", "mingwMain", "jsMain", "wasmJsMain")
             .forEach { getByName(it).dependsOn(noCallbackMain) }
 
+        // `webOAuthDefaultMain` carries the DEFAULT web-OAuth launch (supabase-kt's own
+        // `signInWith`, which opens the platform browser). iOS is deliberately NOT attached: it
+        // supplies its own actual that presents ASWebAuthenticationSession in-app.
+        //
+        // Attached to the APPLE LEAVES individually (macos/tvos/watchos) rather than to appleMain,
+        // because iosMain sits under appleMain — attaching the parent would hand iOS the default
+        // actual and make the override impossible. This is the whole reason the set exists
+        // separately from noCallbackMain above, which legitimately does cover all of appleMain.
+        val webOAuthDefaultMain = create("webOAuthDefaultMain").apply { dependsOn(getByName("commonMain")) }
+        listOf(
+            "androidMain",
+            "jvmMain",
+            "linuxMain",
+            "mingwMain",
+            "jsMain",
+            "wasmJsMain",
+            "macosMain",
+            "tvosMain",
+            "watchosMain",
+        ).forEach { getByName(it).dependsOn(webOAuthDefaultMain) }
+
         commonMain.dependencies {
             // `api`, not `implementation`: SupabaseAuthClient exposes a ComposeAuth handle and
             // SessionStatus, so consumers must see those types. That leak is deliberate — native
