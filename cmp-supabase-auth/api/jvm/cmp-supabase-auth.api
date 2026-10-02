@@ -8,6 +8,7 @@ public abstract interface class io/github/mobilebytelabs/supabaseauth/KmpSupabas
 	public abstract fun getCurrentUser ()Lkotlinx/coroutines/flow/Flow;
 	public abstract fun getRaw ()Lio/github/jan/supabase/SupabaseClient;
 	public abstract fun getSessionStatus ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun getSupportsNativeGoogle ()Z
 	public abstract fun hasRestorableSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun isConfigured ()Z
 	public abstract fun isSignedIn ()Lkotlinx/coroutines/flow/Flow;
@@ -18,18 +19,16 @@ public abstract interface class io/github/mobilebytelabs/supabaseauth/KmpSupabas
 }
 
 public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;
-	public static synthetic fun copy$default (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;
+	public static synthetic fun copy$default (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAppleServiceId ()Ljava/lang/String;
-	public final fun getGoogleIosClientId ()Ljava/lang/String;
 	public final fun getGoogleWebClientId ()Ljava/lang/String;
 	public final fun getHasGoogleNative ()Z
 	public final fun getOauthHost ()Ljava/lang/String;
@@ -87,12 +86,16 @@ public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthError$Un
 
 public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthLog {
 	public static final field INSTANCE Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthLog;
+	public final fun getBuildTypeDefault ()Lkotlin/jvm/functions/Function1;
 	public final fun getHandler ()Lkotlin/jvm/functions/Function1;
+	public final fun getSilenced ()Z
+	public final fun getSink ()Lkotlin/jvm/functions/Function1;
 	public final fun isEnabled ()Z
 	public final fun log (Lkotlin/jvm/functions/Function0;)V
 	public final fun logError (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
 	public final fun redacted (Ljava/lang/String;)Ljava/lang/String;
 	public final fun setHandler (Lkotlin/jvm/functions/Function1;)V
+	public final fun setSilenced (Z)V
 }
 
 public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthOptions {

@@ -12,6 +12,77 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+### Added
+
+- **OAuth sign-in now happens inside the app on both mobile platforms.** Apple rejected a consumer
+  under App Store **Guideline 4 - Design** — *"the user is taken to the default web browser to sign in
+  or register… You may also choose to implement the Safari View Controller API"* — and supabase-kt
+  cannot satisfy that on iOS: its `auth-kt`, `compose-auth` and `compose-auth-ui` iOS artifacts contain
+  zero references to `SFSafariViewController`, `ASWebAuthenticationSession` or `SafariServices`, and the
+  iOS path calls `UIApplication.openURL`, which is the external browser by definition. iOS now presents
+  `ASWebAuthenticationSession`; Android launches its Custom Tab from the **current Activity** instead of
+  the application context, so the tab stays in the app's task rather than resurfacing as a separate
+  browser task. Nothing is required of the consumer — an Android `ContentProvider` captures the
+  Application at process start.
+
+- `KmpSupabaseAuthClient.supportsNativeGoogle` — whether this platform can run native Google sign-in
+  using only what the library ships. False on iOS, true on Android. A *delivery* fact, independent of
+  whether a client id is configured.
+
+- **Diagnostics are on by default in debug builds.** `KmpSupabaseAuthLog` previously defaulted to
+  silence on every platform and required an explicit `handler`. No consumer ever set one, so a failing
+  iOS sign-in produced a device log with zero lines about the sign-in path. The default is now
+  `println` in a debug build of the host app and silence in a release build — detected per platform
+  (`Platform.isDebugBinary` on native, the host app's `FLAG_DEBUGGABLE` on Android, false for
+  JVM/JS/Wasm). Set `handler` to route elsewhere; set `silenced = true` to quiet a debug build. The
+  library's contract is unchanged: it logs decisions and outcomes, never credentials.
+
+### Changed
+
+- **BREAKING — `KmpSupabaseAuthConfig.googleIosClientId` is removed, and iOS no longer attempts native
+  Google sign-in.** supabase-kt drives native iOS Google through a cinterop bridge
+  (`compose-auth-iosArm64Cinterop-GoogleSignInNativeBridge`) that compiles against headers and **links
+  nothing** — its klib's `libraryPaths`/`linkerOpts` point at the supabase-kt CI build directory and it
+  embeds no `.a` and no `.framework`. Linking the GoogleSignIn SDK requires an SPM declaration in a
+  package **Xcode resolves before any Gradle task runs**, so no Maven-published library can deliver it:
+  the Kotlin side builds, the app links, and the first tap aborts at runtime. Keeping an iOS client id
+  field implied "configure this and native iOS works", which was never true.
+
+  iOS Google sign-in now uses the in-app `ASWebAuthenticationSession` flow, which authenticates against
+  the **web** client. Remove `googleIosClientId` from your config; no replacement is needed. Native
+  **Apple** sign-in is unaffected — `appleNativeLogin` resolves through `AuthenticationServices`, a
+  system framework.
+
+- **BREAKING for implementors of `KmpSupabaseAuthClient`** — the interface gains
+  `supportsNativeGoogle`. Consumers that only *use* the client are unaffected; a test double or custom
+  implementation must add the member.
+
+- The `GOOGLE native SKIPPED` log line now names the real reason. On iOS it reported
+  `googleWebClientId is set(72 chars)`, which reads as "your client id is the problem" when the client
+  id is irrelevant there — a log that sends someone to fix the wrong field is worse than no log.
+
+### Fixed
+
+- **A successful OAuth sign-in could be silently discarded on iOS, reported as a user cancellation.**
+  supabase-kt defaults to `FlowType.IMPLICIT` (`AuthConfigDefaults` initializes it so), which returns
+  the session in the callback URL's **fragment** (`#access_token=…&refresh_token=…`), not as a PKCE
+  `code` in the query. The iOS handler searched only the query, found nothing, and threw `Cancelled` —
+  indistinguishable from the person dismissing the sheet. Observed on a device as "sign-in completes at
+  Google and then nothing happens". Both shapes are now handled, rather than pinning a flow type, since
+  the flow is the consumer's choice: a `code` is exchanged, `access_token`+`refresh_token` are imported
+  (with `retrieveUser = true`, because the implicit callback returns tokens only and the session would
+  otherwise be authenticated with a null user), an `error`/`error_description` in either half surfaces
+  as `ProviderRejected` carrying the provider's own message, and a genuinely malformed callback reports
+  a distinct error instead of `Cancelled`.
+
+- `ASWebAuthenticationSession` failures are no longer all reported as cancellations. The session's
+  `NSError` domain and code are logged, so `canceledLogin` (the person tapped Cancel) is
+  distinguishable from `presentationContextNotProvided` (nothing was ever presented), and
+  `start()` returning false — the sheet never appearing — is reported instead of being silent.
+
+- The Apple logo no longer distorts: its `ImageVector` declared a `24x24` default against a `384x512`
+  path viewport, and the glyph is now sized to the mark's real aspect ratio.
+
 ## [0.2.0] - 2026-10-01
 
 ### Added
