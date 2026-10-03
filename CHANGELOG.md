@@ -12,6 +12,8 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-03
+
 ### Added
 
 - **OAuth sign-in now happens inside the app on both mobile platforms.** Apple rejected a consumer
