@@ -1,3 +1,7 @@
+public final class io/github/mobilebytelabs/supabaseauth/ForegroundReturnKt {
+	public static final fun awaitAppForegroundReturn (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuth {
 	public static final field INSTANCE Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuth;
 	public final fun validate (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;)Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;

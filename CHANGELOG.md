@@ -14,6 +14,43 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [0.3.0] - 2026-10-03
 
+### Fixed — cancelling a provider now reports Cancelled, in about a second
+
+- **Dismissing the Google or Apple sheet left the screen on "Signing in…" with every button
+  disabled.** A cancelled provider reports NOTHING — no success, no error, no cancellation — so the
+  only thing that ever ended the flow was the 60-second no-response watchdog, which then reported
+  `NoResponse` (the wrong class) with a message blaming the OAuth client's signing certificate.
+
+  MEASURED on `mbs/cappy`, Android 15, 2026-10-03:
+
+  ```
+  12:18:12.8  Custom Tab window hidden            (dismissed)
+  12:18:13.0  CustomTabActivity DESTROYED, removed from the app's task
+  12:20:35.4  [supabase-auth] GOOGLE: TIMEOUT after 1m — the provider never called back
+  ```
+
+  Two minutes and twenty-two seconds of spinner for someone who changed their mind, ending in an
+  error about certificates.
+
+  The launcher now RACES two signals: the app returning to the foreground with no result →
+  `Cancelled`, against the existing timeout → `NoResponse`. Returning to the foreground is the one
+  thing a provider cannot withhold — the sheet is gone and the app is interactive again.
+
+  A 1.5s grace period follows the foreground signal before anything is reported, because a genuine
+  callback often lands a beat AFTER the host Activity resumes; reporting instantly would turn a
+  SUCCESSFUL sign-in into a spurious "cancelled", which is worse than the bug. A result arriving
+  during the grace cancels the whole job, so nothing is reported.
+
+  New `awaitAppForegroundReturn()` — real on Android (`ActivityLifecycleCallbacks` on the
+  Application the library already captures) and iOS (`UIApplicationDidBecomeActive`); a
+  never-emitting no-op on desktop/JS/Wasm and the non-iOS Apple leaves, where guessing at the
+  transition could report "cancelled" for a sign-in still in progress. The watchdog is KEPT, not
+  replaced: Credential Manager renders over the app and may never pause it, in which case the
+  timeout is still the only net. Public only because `internal` is module-scoped and the launchers
+  live in `cmp-supabase-auth-compose`.
+
+  The timeout message no longer asserts a single cause as "most often".
+
 ### Fixed — release plumbing
 
 - **Every version that reaches Maven Central now gets a git tag and a GitHub release.** The
