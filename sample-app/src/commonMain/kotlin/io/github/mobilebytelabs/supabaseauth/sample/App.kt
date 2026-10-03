@@ -21,8 +21,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuth
-import io.github.mobilebytelabs.supabaseauth.SupabaseAuthConfig
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuth
+import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthConfig
 
 /**
  * Sample app for KMP Supabase Auth.
@@ -47,7 +47,7 @@ fun App() {
             var googleWebClientId by remember { mutableStateOf("123.apps.googleusercontent.com") }
             var redirectUrl by remember { mutableStateOf("myapp://login-callback") }
 
-            val config = SupabaseAuthConfig(
+            val config = KmpSupabaseAuthConfig(
                 projectRef = projectRef,
                 googleWebClientId = googleWebClientId,
                 redirectUrl = redirectUrl,
@@ -55,7 +55,7 @@ fun App() {
 
             // `validate` throws only on a blank/placeholder projectRef — the one condition no
             // fallback can rescue. Everything else degrades rather than failing.
-            val validation = runCatching { SupabaseAuth.validate(config) }
+            val validation = runCatching { KmpSupabaseAuth.validate(config) }
 
             Column(
                 modifier = Modifier

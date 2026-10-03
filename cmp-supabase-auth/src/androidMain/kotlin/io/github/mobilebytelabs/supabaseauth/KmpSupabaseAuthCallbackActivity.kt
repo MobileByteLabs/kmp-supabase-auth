@@ -36,13 +36,37 @@ internal class KmpSupabaseAuthCallbackActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         forward(intent)
+        returnToApp()
         finish()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         forward(intent)
+        returnToApp()
         finish()
+    }
+
+    /**
+     * Bring the app's own activity back to the front, finishing anything above it.
+     *
+     * REQUIRED since the OAuth tab moved INTO the app's task (see [preferInAppBrowser]). Before
+     * that the tab lived in Chrome's task, so finishing this activity surfaced the app by itself.
+     * Now the task is [MainActivity, CustomTab, thisActivity] — finishing alone just reveals the
+     * CUSTOM TAB again, which presents as "signed in but never came back".
+     *
+     * MEASURED on-device 2026-10-02: the callback activity was created in the app's task and
+     * destroyed correctly, and focus returned to `customtabs.CustomTabActivity`. The deep link was
+     * never the problem; the back stack was.
+     *
+     * `CLEAR_TOP` finishes everything above the existing launcher activity — the tab included.
+     * `SINGLE_TOP` stops it being recreated, so app state and the just-restored session survive.
+     * Deliberately NOT `NEW_TASK`: that would start a second task and reintroduce the split.
+     */
+    private fun returnToApp() {
+        val launch = packageManager.getLaunchIntentForPackage(packageName) ?: return
+        launch.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        runCatching { startActivity(launch) }
     }
 
     private fun forward(intent: Intent?) {

@@ -14,12 +14,18 @@ import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthClient
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthError
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthLog
 import io.github.mobilebytelabs.supabaseauth.KmpSupabaseAuthProvider
+import io.github.mobilebytelabs.supabaseauth.awaitAppForegroundReturn
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
 import org.koin.compose.koinInject
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -63,6 +69,20 @@ public fun rememberKmpSupabaseGoogleSignIn(
         KmpSupabaseAuthLog.log { "GOOGLE: client not configured — launcher will report NotConfigured" }
         KmpSupabaseSignInLauncher { onError(KmpSupabaseAuthError.NotConfigured) }
     }
+    // Platforms with no library-deliverable native path go through the in-app web flow instead,
+    // WITHOUT touching ComposeAuth. That matters: `rememberSignInWithGoogle` would fall back to
+    // supabase-kt's own iOS redirect, which is `UIApplication.openURL` — the EXTERNAL Safari app
+    // Apple rejected under Guideline 4. See KmpSupabaseAuthClient.supportsNativeGoogle.
+    if (!client.supportsNativeGoogle) {
+        if (linkIdentity) {
+            KmpSupabaseAuthLog.log {
+                "GOOGLE: linkIdentity requested but this platform uses the web flow, which signs in " +
+                    "as a NEW session rather than linking to the current one — the request is ignored."
+            }
+        }
+        return rememberWebOAuthSignIn(KmpSupabaseAuthProvider.GOOGLE, client, watchdogScope, onError)
+    }
+
     val watchdog = remember { mutableStateOf<Job?>(null) }
     val onResult: (NativeSignInResult) -> Unit = { result ->
         watchdog.value?.cancel()
@@ -157,19 +177,60 @@ private fun rememberSignInWithWatchdog(
             watchdog.value?.cancel()
             if (timeout != Duration.INFINITE) {
                 watchdog.value = scope.launch {
-                    delay(timeout)
-                    KmpSupabaseAuthLog.log {
-                        "$provider: TIMEOUT after $timeout — the provider never called back " +
-                            "(no success, no error, no cancellation). Most often this build's " +
-                            "signing certificate is not registered against the OAuth client."
+                    // RACE, deliberately: whichever of these two happens first ends the flow.
+                    //
+                    //   (a) the app comes back to the foreground with no result  → Cancelled
+                    //   (b) nothing at all happens for `timeout`                 → NoResponse
+                    //
+                    // (a) exists because a DISMISSED provider reports nothing — no success, no
+                    // error, no cancellation. MEASURED on mbs/cappy, Android 15, 2026-10-03: the
+                    // Custom Tab was destroyed at 12:18:13 and the only thing that ever ended the
+                    // flow was this watchdog at 12:20:35. For those two-plus minutes the screen
+                    // sat on "Signing in…" with every button disabled, and the error it finally
+                    // produced was NoResponse — the wrong class, with a message about signing
+                    // certificates — for a person who had simply changed their mind.
+                    select<Unit> {
+                        async { awaitAppForegroundReturn() }.onAwait {
+                            // Grace period: a real callback often lands a beat AFTER the app
+                            // regains focus (the provider resumes the host Activity, then delivers
+                            // its result). Reporting instantly here would turn a SUCCESSFUL
+                            // sign-in into a spurious "cancelled" — worse than the bug being
+                            // fixed. The result cancels this whole job, so if one arrives during
+                            // the delay nothing is reported.
+                            delay(ReturnToForegroundGrace)
+                            KmpSupabaseAuthLog.log {
+                                "$provider: app returned to the foreground with no result after " +
+                                    "$ReturnToForegroundGrace — treating as cancelled by the user"
+                            }
+                            onError(KmpSupabaseAuthError.Cancelled)
+                        }
+                        async { delay(timeout) }.onAwait {
+                            KmpSupabaseAuthLog.log {
+                                "$provider: TIMEOUT after $timeout — the provider never called " +
+                                    "back and the app never returned to the foreground (no " +
+                                    "success, no error, no cancellation). Causes seen in the " +
+                                    "wild: this build's signing certificate is not registered " +
+                                    "against the OAuth client, or the provider UI never appeared."
+                            }
+                            onError(KmpSupabaseAuthError.NoResponse)
+                        }
                     }
-                    onError(KmpSupabaseAuthError.NoResponse)
                 }
             }
             start()
         }
     }
 }
+
+/**
+ * How long to wait after the app regains focus before calling a resultless flow cancelled.
+ *
+ * Long enough that a genuine callback arriving just after the host Activity resumes still wins the
+ * race; short enough that a person who dismissed the sheet is not left watching a spinner. The
+ * failure mode of too-short is reporting "cancelled" for a sign-in that actually succeeded, so this
+ * errs upward.
+ */
+private val ReturnToForegroundGrace: Duration = 1500.milliseconds
 
 /** Maps the plugin's result onto the provider-neutral taxonomy. Success is intentionally ignored. */
 private fun NativeSignInResult.reportFailure(
@@ -202,6 +263,51 @@ private fun NativeSignInResult.reportFailure(
         is NativeSignInResult.Error -> {
             KmpSupabaseAuthLog.logError(exception) { "$provider: onResult = Error: $message" }
             onError(KmpSupabaseAuthError.ProviderRejected(provider, exception))
+        }
+    }
+}
+
+/**
+ * Drives [KmpSupabaseAuthClient.signInWithGoogleFallback] / `signInWithAppleFallback` — the
+ * library's own in-app web OAuth leg (`ASWebAuthenticationSession` on iOS).
+ *
+ * Uses a DETACHED scope for the same measured reason as guest sign-in: presenting the sheet and
+ * then navigating on success tears down this composition, and `rememberCoroutineScope()` is
+ * cancelled at exactly that moment — which reads as "sign-in silently does nothing".
+ *
+ * No watchdog. The suspend call returns a `Result` either way, so the no-callback failure mode the
+ * watchdog exists for cannot happen here.
+ */
+@Composable
+private fun rememberWebOAuthSignIn(
+    provider: KmpSupabaseAuthProvider,
+    client: KmpSupabaseAuthClient,
+    scope: CoroutineScope?,
+    onError: (KmpSupabaseAuthError) -> Unit,
+): KmpSupabaseSignInLauncher {
+    val detachedScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    val active = scope ?: detachedScope
+    return remember(provider, client, active, onError) {
+        KmpSupabaseSignInLauncher {
+            KmpSupabaseAuthLog.log { "$provider: in-app web OAuth (no native path on this platform)" }
+            active.launch {
+                val result = when (provider) {
+                    KmpSupabaseAuthProvider.APPLE -> client.signInWithAppleFallback()
+                    else -> client.signInWithGoogleFallback()
+                }
+                result
+                    .onSuccess { KmpSupabaseAuthLog.log { "$provider: web OAuth leg completed" } }
+                    .onFailure { cause ->
+                        val error = cause as? KmpSupabaseAuthError ?: KmpSupabaseAuthError.Unknown(cause)
+                        KmpSupabaseAuthLog.logError(error.cause) {
+                            "$provider: web OAuth FAILED (${error::class.simpleName}). Check that the " +
+                                "provider is enabled in Supabase and that the app's redirect URL is " +
+                                "listed there — a missing redirect URL completes the sheet and then " +
+                                "drops the callback."
+                        }
+                        onError(error)
+                    }
+            }
         }
     }
 }

@@ -25,7 +25,11 @@ import androidx.compose.ui.unit.dp
 internal fun kmpSupabaseAppleLogo(tint: Color): ImageVector = remember(tint) {
     ImageVector.Builder(
         name = "AppleLogo",
-        defaultWidth = 24.dp,
+        // 18:24 == 384:512. The defaults MUST carry the viewport's aspect ratio: they were
+        // 24x24 against a 384x512 viewport, so the 3:4 glyph was stretched to fill a square and
+        // the mark came out visibly fat. Apple's is a brand-controlled mark — a distorted one is
+        // a guideline violation, not just a cosmetic bug.
+        defaultWidth = 18.dp,
         defaultHeight = 24.dp,
         viewportWidth = 384f,
         viewportHeight = 512f,

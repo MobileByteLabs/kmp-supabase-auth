@@ -44,6 +44,19 @@ public interface KmpSupabaseAuthClient {
     /** Create an anonymous session. RLS applies immediately; `is_anonymous` is true. */
     public suspend fun signInAnonymously(): Result<Unit>
 
+    /**
+     * Whether this platform can run NATIVE Google sign-in with only what this library ships.
+     *
+     * **False on iOS**, where the native path needs the GoogleSignIn SDK that only the app's own
+     * Xcode/SPM graph can supply. The Compose launcher reads this and routes Google through
+     * [signInWithGoogleFallback] — an in-app `ASWebAuthenticationSession`, nothing for the app to
+     * add. True on Android (Credential Manager is a transitive dependency).
+     *
+     * This is a DELIVERY fact, independent of whether a client id is configured; see
+     * `KmpSupabaseAuthConfig.hasGoogleNative` for the configured half.
+     */
+    public val supportsNativeGoogle: Boolean
+
     /** Web-OAuth Apple sign-in, for platforms with no native provider (incl. macOS, JVM, web). */
     public suspend fun signInWithAppleFallback(): Result<Unit>
 

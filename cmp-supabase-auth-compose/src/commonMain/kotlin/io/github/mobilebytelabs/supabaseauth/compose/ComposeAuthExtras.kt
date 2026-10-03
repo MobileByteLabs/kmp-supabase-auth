@@ -54,13 +54,26 @@ public fun kmpSupabaseComposeAuthExtras(
             googleNativeLogin(serverClientId = config.googleWebClientId)
         } else {
             KmpSupabaseAuthLog.log {
+                // Naming the RIGHT reason matters more than it looks. This line used to report
+                // "googleWebClientId is set(72 chars) → web OAuth fallback" on iOS, which reads as
+                // "your client id is the problem" when the id is irrelevant there — the platform
+                // has no native path at all. A log that sends someone to fix the wrong field is
+                // worse than no log.
                 "install: GOOGLE native SKIPPED — " +
-                    if (!googleNative) {
-                        "googleNative=false"
-                    } else {
-                        "googleWebClientId is ${KmpSupabaseAuthLog.redacted(config.googleWebClientId)}" +
-                            " → sign-in will use the web OAuth fallback"
-                    }
+                    when {
+                        !googleNative -> "googleNative=false was passed to kmpSupabaseComposeAuthExtras"
+
+                        config.googleWebClientId.isBlank() ->
+                            "googleWebClientId is ${KmpSupabaseAuthLog.redacted(config.googleWebClientId)}" +
+                                " → set it to the WEB client id"
+
+                        // Both other causes ruled out, so `hasGoogleNative` is false for the only
+                        // remaining reason: this platform cannot deliver the native flow.
+                        else ->
+                            "this platform has no native Google path (iOS needs the GoogleSignIn " +
+                                "SDK in the app's own Xcode/SPM graph, which a published library cannot " +
+                                "supply) — the client id is NOT the problem"
+                    } + " → sign-in will use the in-app web OAuth flow"
             }
         }
         if (appleNative) {

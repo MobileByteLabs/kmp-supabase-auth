@@ -131,6 +131,51 @@ kotlin {
         listOf("jvmMain", "appleMain", "linuxMain", "mingwMain", "jsMain", "wasmJsMain")
             .forEach { getByName(it).dependsOn(noCallbackMain) }
 
+        // `webOAuthDefaultMain` carries the DEFAULT web-OAuth launch (supabase-kt's own
+        // `signInWith`, which opens the platform browser). iOS is deliberately NOT attached: it
+        // supplies its own actual that presents ASWebAuthenticationSession in-app.
+        //
+        // Attached to the APPLE LEAVES individually (macos/tvos/watchos) rather than to appleMain,
+        // because iosMain sits under appleMain — attaching the parent would hand iOS the default
+        // actual and make the override impossible. This is the whole reason the set exists
+        // separately from noCallbackMain above, which legitimately does cover all of appleMain.
+        // `isDebugBuild` has a real answer on native (Platform.isDebugBinary) and Android
+        // (the host app's FLAG_DEBUGGABLE). JVM/JS/Wasm have no portable equivalent, so they share
+        // one `false`. nativeMain + androidMain carry their own actuals from the default hierarchy.
+        // `awaitAppForegroundReturn` has a REAL implementation on android (the captured Application's
+        // ActivityLifecycleCallbacks) and ios (UIApplicationDidBecomeActive). Everything else no-ops.
+        //
+        // This cannot reuse webOAuthDefaultMain: that set includes androidMain, which needs the real
+        // one. Attached to the Apple LEAVES rather than appleMain for the same reason that set is —
+        // iosMain sits under appleMain and would inherit the no-op, making the override impossible.
+        val noForegroundSignalMain = create("noForegroundSignalMain").apply { dependsOn(getByName("commonMain")) }
+        listOf(
+            "jvmMain",
+            "linuxMain",
+            "mingwMain",
+            "jsMain",
+            "wasmJsMain",
+            "macosMain",
+            "tvosMain",
+            "watchosMain",
+        ).forEach { getByName(it).dependsOn(noForegroundSignalMain) }
+
+        val noDebugDetectMain = create("noDebugDetectMain").apply { dependsOn(getByName("commonMain")) }
+        listOf("jvmMain", "jsMain", "wasmJsMain").forEach { getByName(it).dependsOn(noDebugDetectMain) }
+
+        val webOAuthDefaultMain = create("webOAuthDefaultMain").apply { dependsOn(getByName("commonMain")) }
+        listOf(
+            "androidMain",
+            "jvmMain",
+            "linuxMain",
+            "mingwMain",
+            "jsMain",
+            "wasmJsMain",
+            "macosMain",
+            "tvosMain",
+            "watchosMain",
+        ).forEach { getByName(it).dependsOn(webOAuthDefaultMain) }
+
         commonMain.dependencies {
             // `api`, not `implementation`: SupabaseAuthClient exposes a ComposeAuth handle and
             // SessionStatus, so consumers must see those types. That leak is deliberate — native

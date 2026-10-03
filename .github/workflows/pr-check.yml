@@ -82,6 +82,11 @@ jobs:
       - name: No hardcoded library version in docs
         run: bash .github/scripts/assert-no-hardcoded-version.sh
 
+      # Guards the one invariant Maven Central cannot forgive: a version published without a tag
+      # can never be re-cut. Cheap (pure grep), so it rides the Docs job rather than earning one.
+      - name: Every Maven publish path creates a tag + release
+        run: bash .github/scripts/assert-publish-tags.sh
+
       # Runs on every PR, not just version bumps: the cheapest moment to write a release note is
       # while the change is still in review. `--since` additionally requires that a change to
       # shippable code (cmp-*/src, the version, the catalog) arrives with a changelog entry, so

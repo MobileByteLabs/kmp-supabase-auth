@@ -23,20 +23,25 @@ public data class KmpSupabaseAuthConfig(
      * with an opaque provider error rather than at build time. See `docs/SETUP_GOOGLE.md`.
      */
     val googleWebClientId: String = "",
-    /** Google Cloud iOS client id. Only needed for the native iOS Google flow. */
-    val googleIosClientId: String = "",
     /** Apple Services ID, for the web/redirect Apple path. See `docs/SETUP_APPLE.md`. */
     val appleServiceId: String = "",
     /** App callback URL as `scheme://host`, e.g. `myapp://login-callback`. */
     val redirectUrl: String = "",
 ) {
     /**
-     * True when the native Google flow can be installed.
+     * True when the native Google flow can be installed: the platform can deliver it
+     * ([googleNativeSupported]) AND it is configured.
      *
-     * False degrades to the OAuth redirect, which is a working path — whereas half-configuring
+     * False degrades to an in-app web flow, which is a working path — whereas half-configuring
      * the native flow is not. Blank and whitespace both count as absent.
+     *
+     * **Always false on iOS**, by delivery rather than by configuration — the native iOS path needs
+     * the GoogleSignIn SDK, which no Maven-published library can put into an app's link graph. See
+     * [googleNativeSupported]. There is deliberately no iOS client id field to set: it would read
+     * as "configure this and native iOS works", which is not true.
      */
-    public val hasGoogleNative: Boolean get() = googleWebClientId.isNotBlank()
+    public val hasGoogleNative: Boolean
+        get() = googleNativeSupported && googleWebClientId.isNotBlank()
 
     /** Scheme half of [redirectUrl], or null when absent or malformed. */
     public val oauthScheme: String? get() = redirectUrl.substringBeforeOrNull("://")
