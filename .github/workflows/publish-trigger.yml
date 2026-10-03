@@ -6,20 +6,28 @@ name: Publish trigger (consumer-library-ai-bridge epic AC #24)
 #
 # Authored 2026-05-30 (Phase 05 T7 of consumer-library-ai-bridge epic).
 
-# DISABLED push trigger — deliberately, not by neglect.
+# DISABLED push trigger — deliberately, not by neglect. But the ORIGINAL reason no longer holds.
 #
-# Every publish must come from a GitHub release, because that is the only path that produces a
-# tag and a changelog-enriched release body (publish.yml sets `create-github-release: false`:
-# it EXPECTS the release to already exist). A publish dispatched from a dev push produces a
-# Maven Central artifact with no tag, no release and no notes — and Central is immutable, so
-# that version is burned permanently.
+# It used to read: "every publish must come from a GitHub release, because that is the only path
+# that produces a tag … (publish.yml sets `create-github-release: false`: it EXPECTS the release to
+# already exist)". That was true when publish.yml hardcoded `false`. It is NOT true any more —
+# publish.yml now sets `create-github-release: ${{ github.event_name != 'release' }}`, so ANY entry
+# point other than the `release:` trigger creates the tag and the changelog-enriched release
+# itself. This workflow dispatches publish.yml, which arrives as `workflow_dispatch`, so a
+# push-triggered publish would now be tagged and released like any other.
 #
-# This was latent rather than safe: the path filter below said `auth-*/**`, a leftover from the
-# cmp-* rename, so it could never match and this workflow never fired. Correcting the glob on
+# The push path therefore stays disabled on a POLICY ground, not a safety one: it would publish to
+# immutable Maven Central on every merge to dev that touches `cmp-*/**`, making the release cadence
+# a side effect of merging rather than a decision. Re-enable it only if that is what you want.
+#
+# It was also latent rather than safe once: the path filter below said `auth-*/**`, a leftover from
+# the cmp-* rename, so it could never match and this workflow never fired. Correcting the glob on
 # 2026-09-27 would have ARMED it, and the very next merge to dev touched four matching files.
 #
-# The paths are kept correct so that re-enabling is a one-line change. To release, create the
-# release (scripts/release.sh, or `gh release create vX.Y.Z`) and let publish.yml run from it.
+# The paths are kept correct so that re-enabling is a one-line change. To release today: bump
+# `supabaseauth.version` + its `## [x.y.z]` CHANGELOG section, then either run publish.yml via
+# workflow_dispatch (it tags + releases), or `gh release create vX.Y.Z` and let the `release:`
+# trigger run it.
 on:
   # push:
   #   branches: [dev]

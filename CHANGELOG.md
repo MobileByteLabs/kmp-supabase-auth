@@ -14,6 +14,28 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [0.3.0] - 2026-10-03
 
+### Fixed — release plumbing
+
+- **Every version that reaches Maven Central now gets a git tag and a GitHub release.** The
+  `create-github-release` input read `${{ github.event_name == 'workflow_dispatch' }}` — an
+  ALLOWLIST that was correct for the two triggers that existed and silently wrong for any third. A
+  `schedule`, a `repository_dispatch`, a `workflow_call`, or re-enabling the push path would each
+  evaluate false and publish to **immutable** Central with no tag, no release and no notes. It now
+  reads `${{ github.event_name != 'release' }}` — a denylist of the single event for which creating
+  a release is genuinely wrong, because it is what started the run. An allowlist must be edited in
+  lockstep with every trigger change; a denylist of the one incompatible event does not.
+
+  Locked by `.github/scripts/assert-publish-tags.sh`, wired into the Docs job: PT-1 the input
+  exists · PT-2 it is not a literal `false` · PT-3 it is not an event allowlist · PT-4 it is the
+  fail-safe form. Verified against all three regression shapes, the previous
+  `== 'workflow_dispatch'` among them.
+
+  `publish-trigger.yml`'s comment claimed publish.yml "sets `create-github-release: false`" and
+  gave that as the reason its push trigger stays disabled. That reason no longer holds — the push
+  path would now be tagged like any other. It stays disabled on POLICY grounds instead: it would
+  publish on every merge to dev touching `cmp-*/**`, making release cadence a side effect of
+  merging.
+
 ### Added
 
 - **OAuth sign-in now happens inside the app on both mobile platforms.** Apple rejected a consumer
