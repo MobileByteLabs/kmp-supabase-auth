@@ -22,6 +22,13 @@
 # PT-2 it is not a literal false
 # PT-3 it is not an event-name allowlist (`== '<event>'`)
 # PT-4 it is the denylist form, or an unconditional true
+# PT-5 `bump-after-release: true` AND `next-bump-type` set — the PAIR, not just the flag
+#
+# PT-5 guards the OTHER half of "a publish must not leave the repo mid-release". The job that opens
+# it was wired and switched off, reporting `skipped` on a successful release — which from the
+# outside is indistinguishable from not existing. With the version left at the just-released number,
+# the next publish either re-cuts a duplicate (Central rejects it: "Component with package url …
+# already exists", observed on run 37115504768) or relies on someone remembering the bump by hand.
 #
 # exit 0 = PASS · 1 = FAIL (blocks). Pure bash + grep; no YAML parser needed.
 set -uo pipefail
@@ -66,7 +73,43 @@ else
   esac
 fi
 
+# PT-5 — the post-release version bump must be enabled.
+BUMP="$(grep -E '^[[:space:]]*bump-after-release:' "$WF" | head -1)"
+BVAL="${BUMP#*bump-after-release:}"
+BVAL="$(printf '%s' "$BVAL" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+if [ -z "$BUMP" ]; then
+  echo "FAIL PT-5: $WF declares no 'bump-after-release:' input."
+  echo "       The reusable workflow then defaults it, and a publish can leave the version"
+  echo "       unchanged — so the next release re-cuts a version Central rejects as a duplicate."
+  fail=1
+elif [ "$BVAL" != "true" ]; then
+  echo "FAIL PT-5: bump-after-release is '$BVAL', not true."
+  echo "       The 'Open Bump PR (next cycle)' job reports 'skipped' in that state, which reads"
+  echo "       as 'not implemented' while the version silently stays at the released number."
+  echo "       Set: bump-after-release: true"
+  fail=1
+else
+  # The flag alone is a HALF-configuration: it says THAT the version advances, not BY WHAT.
+  # kmp-toolkit, the working reference in this org, sets both (its publish.yml:54-55). Asserting
+  # only the flag is how this gate passed while the bump was still incompletely wired.
+  NBT="$(grep -E '^[[:space:]]*next-bump-type:' "$WF" | head -1)"
+  NVAL="${NBT#*next-bump-type:}"
+  NVAL="$(printf '%s' "$NVAL" | sed "s/^[[:space:]]*//;s/[[:space:]]*$//;s/^'//;s/'$//" )"
+  case "$NVAL" in
+    patch|minor|major)
+      echo "  PT-5 ok: bump-after-release: true + next-bump-type: $NVAL" ;;
+    "")
+      echo "FAIL PT-5: bump-after-release is true but 'next-bump-type' is not set."
+      echo "       The flag says THAT the version advances; next-bump-type says BY WHAT. Match the"
+      echo "       org reference (kmp-toolkit publish.yml): next-bump-type: 'patch'"
+      fail=1 ;;
+    *)
+      echo "FAIL PT-5: next-bump-type is '$NVAL' — expected patch | minor | major."
+      fail=1 ;;
+  esac
+fi
+
 if [ "$fail" -eq 0 ]; then
-  echo "publish-tags gate: every Maven publish path creates a tag + GitHub release"
+  echo "publish-tags gate: every Maven publish creates a tag + GitHub release AND advances the version"
 fi
 exit "$fail"
