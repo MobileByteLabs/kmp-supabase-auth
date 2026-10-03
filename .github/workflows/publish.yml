@@ -50,7 +50,19 @@ jobs:
       # module already reads it via providers.gradleProperty(...).
       gradle-properties-key: 'supabaseauth.version'
       verify-against-maven: false           # set true once your library is on Maven Central
-      bump-after-release: false
+      # TRUE: every publish opens a PR bumping `supabaseauth.version` to the next dev cycle.
+      #
+      # The reusable workflow's `Open Bump PR (next cycle)` job was wired correctly all along and
+      # simply switched off — it reported `skipped` on the successful v0.3.0 run (37114009332),
+      # which reads identically to "not implemented" from the outside.
+      #
+      # Why it matters beyond convenience: `gradle-properties-key` makes `supabaseauth.version` the
+      # version SoT, and the changelog gate refuses a release whose `## [x.y.z]` section is missing.
+      # Leaving the version at the just-released number means the NEXT release either re-cuts a
+      # version Central will reject as a duplicate (observed: run 37115504768 failed validation with
+      # "Component with package url … already exists") or needs the bump remembered by hand at
+      # exactly the moment attention is lowest. The PR makes the next cycle the default state.
+      bump-after-release: true
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'

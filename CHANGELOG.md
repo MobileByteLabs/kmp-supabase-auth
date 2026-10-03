@@ -12,6 +12,26 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+### Fixed — a publish now completes the release cycle
+
+- **`bump-after-release: true`.** The reusable workflow's `Open Bump PR (next cycle)` job was wired
+  correctly and simply switched off: it reported `skipped` on the successful v0.3.0 publish
+  (run 37114009332), which from the outside reads exactly like "not implemented".
+
+  It matters because `gradle-properties-key` makes `supabaseauth.version` the version source of
+  truth and the changelog gate refuses a release whose `## [x.y.z]` section is missing. Left at the
+  just-released number, the next publish either re-cuts a duplicate — Maven Central rejects it,
+  observed on run 37115504768: *"Component with package url … already exists"* — or depends on the
+  bump being remembered by hand at the moment attention is lowest.
+
+- `assert-publish-tags.sh` gains **PT-5**, asserting `bump-after-release: true`, alongside PT-1..PT-4
+  which already guard that every publish path creates its tag and release. Verified against both
+  regression shapes: the flag set back to `false`, and the input deleted outright. The two halves are
+  one invariant — a publish must leave neither the tag nor the version behind.
+
+  v0.3.0 is the first release where a `workflow_dispatch` publish produced its own tag
+  (`v0.3.0` → `5507b900`, 2026-10-03T09:51Z). v0.2.0 reached Central with none.
+
 ## [0.3.0] - 2026-10-03
 
 ### Fixed — cancelling a provider now reports Cancelled, in about a second

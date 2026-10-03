@@ -22,6 +22,13 @@
 # PT-2 it is not a literal false
 # PT-3 it is not an event-name allowlist (`== '<event>'`)
 # PT-4 it is the denylist form, or an unconditional true
+# PT-5 `bump-after-release` is true — every publish leaves the version advanced
+#
+# PT-5 guards the OTHER half of "a publish must not leave the repo mid-release". The job that opens
+# it was wired and switched off, reporting `skipped` on a successful release — which from the
+# outside is indistinguishable from not existing. With the version left at the just-released number,
+# the next publish either re-cuts a duplicate (Central rejects it: "Component with package url …
+# already exists", observed on run 37115504768) or relies on someone remembering the bump by hand.
 #
 # exit 0 = PASS · 1 = FAIL (blocks). Pure bash + grep; no YAML parser needed.
 set -uo pipefail
@@ -66,7 +73,26 @@ else
   esac
 fi
 
+# PT-5 — the post-release version bump must be enabled.
+BUMP="$(grep -E '^[[:space:]]*bump-after-release:' "$WF" | head -1)"
+BVAL="${BUMP#*bump-after-release:}"
+BVAL="$(printf '%s' "$BVAL" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+if [ -z "$BUMP" ]; then
+  echo "FAIL PT-5: $WF declares no 'bump-after-release:' input."
+  echo "       The reusable workflow then defaults it, and a publish can leave the version"
+  echo "       unchanged — so the next release re-cuts a version Central rejects as a duplicate."
+  fail=1
+elif [ "$BVAL" != "true" ]; then
+  echo "FAIL PT-5: bump-after-release is '$BVAL', not true."
+  echo "       The 'Open Bump PR (next cycle)' job reports 'skipped' in that state, which reads"
+  echo "       as 'not implemented' while the version silently stays at the released number."
+  echo "       Set: bump-after-release: true"
+  fail=1
+else
+  echo "  PT-5 ok: bump-after-release: true — every publish advances the version"
+fi
+
 if [ "$fail" -eq 0 ]; then
-  echo "publish-tags gate: every Maven publish path creates a tag + GitHub release"
+  echo "publish-tags gate: every Maven publish creates a tag + GitHub release AND advances the version"
 fi
 exit "$fail"
