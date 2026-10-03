@@ -22,7 +22,7 @@
 # PT-2 it is not a literal false
 # PT-3 it is not an event-name allowlist (`== '<event>'`)
 # PT-4 it is the denylist form, or an unconditional true
-# PT-5 `bump-after-release` is true — every publish leaves the version advanced
+# PT-5 `bump-after-release: true` AND `next-bump-type` set — the PAIR, not just the flag
 #
 # PT-5 guards the OTHER half of "a publish must not leave the repo mid-release". The job that opens
 # it was wired and switched off, reporting `skipped` on a successful release — which from the
@@ -89,7 +89,24 @@ elif [ "$BVAL" != "true" ]; then
   echo "       Set: bump-after-release: true"
   fail=1
 else
-  echo "  PT-5 ok: bump-after-release: true — every publish advances the version"
+  # The flag alone is a HALF-configuration: it says THAT the version advances, not BY WHAT.
+  # kmp-toolkit, the working reference in this org, sets both (its publish.yml:54-55). Asserting
+  # only the flag is how this gate passed while the bump was still incompletely wired.
+  NBT="$(grep -E '^[[:space:]]*next-bump-type:' "$WF" | head -1)"
+  NVAL="${NBT#*next-bump-type:}"
+  NVAL="$(printf '%s' "$NVAL" | sed "s/^[[:space:]]*//;s/[[:space:]]*$//;s/^'//;s/'$//" )"
+  case "$NVAL" in
+    patch|minor|major)
+      echo "  PT-5 ok: bump-after-release: true + next-bump-type: $NVAL" ;;
+    "")
+      echo "FAIL PT-5: bump-after-release is true but 'next-bump-type' is not set."
+      echo "       The flag says THAT the version advances; next-bump-type says BY WHAT. Match the"
+      echo "       org reference (kmp-toolkit publish.yml): next-bump-type: 'patch'"
+      fail=1 ;;
+    *)
+      echo "FAIL PT-5: next-bump-type is '$NVAL' — expected patch | minor | major."
+      fail=1 ;;
+  esac
 fi
 
 if [ "$fail" -eq 0 ]; then

@@ -24,7 +24,14 @@ section in step with `supabaseauth.version` in `gradle.properties`.
   observed on run 37115504768: *"Component with package url … already exists"* — or depends on the
   bump being remembered by hand at the moment attention is lowest.
 
-- `assert-publish-tags.sh` gains **PT-5**, asserting `bump-after-release: true`, alongside PT-1..PT-4
+- **`next-bump-type: 'patch'`** — required alongside the flag, and the half that was missing on the
+  first attempt. `bump-after-release` says THAT the version advances; `next-bump-type` says BY WHAT.
+  kmp-toolkit, the working reference in this org, sets both (its `publish.yml:54-55`); setting only
+  the flag is a half-configuration that looks enabled. `patch` is the right default — a release
+  needing minor/major overrides it via the dispatch `version` input or closes the auto-PR.
+
+- `assert-publish-tags.sh` gains **PT-5**, asserting the PAIR (`bump-after-release: true` **and**
+  `next-bump-type` ∈ patch|minor|major), alongside PT-1..PT-4
   which already guard that every publish path creates its tag and release. Verified against both
   regression shapes: the flag set back to `false`, and the input deleted outright. The two halves are
   one invariant — a publish must leave neither the tag nor the version behind.

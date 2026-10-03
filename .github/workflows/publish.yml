@@ -27,8 +27,8 @@ on:
         type: string
 
 permissions:
-  contents: write          # release creation
-  pull-requests: write
+  contents: write          # release creation, tag push, branch push for the bump PR
+  pull-requests: write     # bump-after-release opens a PR
 
 jobs:
   publish:
@@ -63,6 +63,15 @@ jobs:
       # "Component with package url … already exists") or needs the bump remembered by hand at
       # exactly the moment attention is lowest. The PR makes the next cycle the default state.
       bump-after-release: true
+      # Required alongside the flag, and the half that was missing: `bump-after-release` only says
+      # THAT the version advances, `next-bump-type` says BY WHAT. kmp-toolkit — the working
+      # reference in this org — sets both (publish.yml:54-55); setting only the flag is the
+      # half-configuration this parity check exists to prevent.
+      #
+      # `patch` is the right default: the next cycle starts as a patch and a release that needs
+      # minor/major overrides it via the workflow_dispatch `version` input, or closes the auto-PR
+      # and bumps by hand. Choosing minor here would inflate every routine release.
+      next-bump-type: 'patch'
       java-version: '21'
       java-distribution: 'zulu'
       sonatype-host: 'CENTRAL_PORTAL'
