@@ -7,7 +7,7 @@ android-compileSdk = "37"
 android-targetSdk = "36"
 vanniktechMavenPublish = "0.37.0"
 dokka = "2.0.0"
-kover = "0.9.9"
+kover = "0.9.11"
 binaryCompatibilityValidator = "0.18.2"
 
 # Supabase — measured publication sets on Maven Central 2026-09-26:
