@@ -24,7 +24,7 @@ koin = "4.1.1"
 
 # Code Quality
 detekt = "1.23.8"
-spotless = "8.10.2"
+spotless = "8.10.4"
 ktlint = "1.8.0"
 
 # Testing
