@@ -12,12 +12,50 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
-## [0.3.1] - unreleased
+## [0.3.3]
 
-> Version declared by `gradle.properties#supabaseauth.version`, bumped automatically after the 0.3.0
-> release (`bump-after-release`). That job advances the version but does **not** create this heading,
-> so `assert-changelog.sh` fails until someone writes it — correctly, since a publish from that state
-> would ship with no release notes. Worth knowing when the next bump PR lands.
+Repository hygiene — no library code has changed in this cycle yet.
+
+- **Dependabot removed.** `.github/dependabot.yml` is deleted, so no automatic dependency-update
+  PRs are raised. Note that this stops security-update PRs too; Dependabot *alerts* in the Security
+  tab are a separate repository setting and are unaffected. The `mbl-actionhub` reusable-workflow
+  pins now advance by hand.
+
+## [0.3.2] - 2026-10-21
+
+### Fixed — Android sign-in, both found on a device
+
+- **A native failure no longer dead-ends the sign-in.** Android's native Google path validates the
+  calling app's package and signing certificate against an Android OAuth client in the same Google
+  Cloud project as the web client id. Several ordinary situations leave it with nothing to offer —
+  a signing certificate that was never registered (every fresh fork, and any release build whose
+  cert is not on the client), no Google account on the device, Credential Manager's cooldown after
+  repeated dismissals — and every one of them surfaces identically as `NoCredentialException`.
+  Measured on `mbs/cappy`: `[GetGoogleIdOperation] Operation failed. curh: [28444]`, with seven
+  Google accounts signed in on the device. `rememberKmpSupabaseGoogleSignIn` now falls back to the
+  web OAuth flow — which needs only the web client id that was already configured for the native
+  attempt — instead of reporting `ProviderRejected` and leaving the person with nowhere to go.
+
+  Only a provider *error* falls back. A dismissal is never retried in the browser, and a network
+  failure would need the same network the native path just failed on. The fallback is also disabled
+  for `linkIdentity`, where the two paths are not equivalent: linking attaches the provider to the
+  CURRENT session while the web leg signs in as a NEW one, so falling back there would replace a
+  guest session — losing whatever it holds — to avoid an error message.
+
+- **A successful sign-in is no longer reported as cancelled.** The watchdog called a flow cancelled
+  on a fixed 1500 ms grace after the app regained focus. On a sign-in that WORKED, measured on
+  Android 15, that grace expired 276 ms before the result arrived:
+
+  ```
+  18:46:47.550  …no result after 1.5s — treating as cancelled by the user
+  18:46:47.826  onResult = Success
+  ```
+
+  so every successful native Google sign-in delivered `Cancelled` to the host app. A longer timer
+  cannot fix this — only evidence can. The foreground check now waits for the access token to
+  change (a 3 s ceiling that ends the moment a session lands) and reports `Cancelled` only when no
+  session appears. The token is sampled before hand-off, so a pre-existing anonymous session is not
+  mistaken for this sign-in succeeding.
 
 ### Documentation — corrected the claims the device run falsified
 
@@ -54,6 +92,10 @@ Also recorded: the published AAR ships **no consumer ProGuard rules** (verified 
 `AuthConfig` must be declared **above** the Koin module because Kotlin initialises top-level
 properties in declaration order and `includes(...)` reads it during module construction.
 
+
+## [0.3.1] - 2026-10-03
+
+Release automation only — no library code changed between 0.3.0 and 0.3.1.
 
 ### Fixed — a publish now completes the release cycle
 
