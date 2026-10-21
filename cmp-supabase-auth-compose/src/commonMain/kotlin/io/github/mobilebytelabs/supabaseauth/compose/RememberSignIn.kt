@@ -23,6 +23,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -83,10 +84,20 @@ public fun rememberKmpSupabaseGoogleSignIn(
         return rememberWebOAuthSignIn(KmpSupabaseAuthProvider.GOOGLE, client, watchdogScope, onError)
     }
 
+    // A native failure is not the end of the road here: the web flow needs only the web client id,
+    // which is already configured. Disabled for link-identity, where the two are not equivalent.
+    val webFallback = rememberNativeFailureWebFallback(
+        provider = KmpSupabaseAuthProvider.GOOGLE,
+        client = client,
+        enabled = !linkIdentity,
+        timeout = timeout,
+        scope = watchdogScope,
+        onError = onError,
+    )
     val watchdog = remember { mutableStateOf<Job?>(null) }
     val onResult: (NativeSignInResult) -> Unit = { result ->
         watchdog.value?.cancel()
-        result.reportFailure(KmpSupabaseAuthProvider.GOOGLE, onError)
+        result.reportFailure(KmpSupabaseAuthProvider.GOOGLE, onError, onNativeUnusable = webFallback)
     }
     // `onIdToken` is non-nullable with a plugin-supplied default, so the link-identity variant
     // has to be a separate call rather than a null argument.
@@ -99,7 +110,14 @@ public fun rememberKmpSupabaseGoogleSignIn(
     } else {
         raw.composeAuth.rememberSignInWithGoogle(type = dialogType, onResult = onResult)
     }
-    return rememberSignInWithWatchdog(KmpSupabaseAuthProvider.GOOGLE, timeout, watchdog, watchdogScope, onError) {
+    return rememberSignInWithWatchdog(
+        KmpSupabaseAuthProvider.GOOGLE,
+        timeout,
+        watchdog,
+        watchdogScope,
+        client,
+        onError,
+    ) {
         state.startFlow()
     }
 }
@@ -133,7 +151,14 @@ public fun rememberKmpSupabaseAppleSignIn(
     } else {
         raw.composeAuth.rememberSignInWithApple(onResult = onResult)
     }
-    return rememberSignInWithWatchdog(KmpSupabaseAuthProvider.APPLE, timeout, watchdog, watchdogScope, onError) {
+    return rememberSignInWithWatchdog(
+        KmpSupabaseAuthProvider.APPLE,
+        timeout,
+        watchdog,
+        watchdogScope,
+        client,
+        onError,
+    ) {
         state.startFlow()
     }
 }
@@ -159,6 +184,7 @@ private fun rememberSignInWithWatchdog(
     timeout: Duration,
     watchdog: androidx.compose.runtime.MutableState<Job?>,
     watchdogScope: CoroutineScope?,
+    client: KmpSupabaseAuthClient,
     onError: (KmpSupabaseAuthError) -> Unit,
     start: () -> Unit,
 ): KmpSupabaseSignInLauncher {
@@ -171,10 +197,13 @@ private fun rememberSignInWithWatchdog(
     // whenever your UI replaces the providers during sign-in.
     val fallbackScope = rememberCoroutineScope()
     val scope = watchdogScope ?: fallbackScope
-    return remember(provider, timeout, start) {
+    return remember(provider, timeout, client, start) {
         KmpSupabaseSignInLauncher {
             KmpSupabaseAuthLog.log { "$provider: startFlow() — handing off to the provider" }
             watchdog.value?.cancel()
+            // Snapshot BEFORE handing off, so the foreground arm below can tell "a session landed
+            // while we were away" from "an anonymous session was already here".
+            val tokenBefore = client.currentAccessToken()
             if (timeout != Duration.INFINITE) {
                 watchdog.value = scope.launch {
                     // RACE, deliberately: whichever of these two happens first ends the flow.
@@ -191,18 +220,37 @@ private fun rememberSignInWithWatchdog(
                     // certificates — for a person who had simply changed their mind.
                     select<Unit> {
                         async { awaitAppForegroundReturn() }.onAwait {
-                            // Grace period: a real callback often lands a beat AFTER the app
-                            // regains focus (the provider resumes the host Activity, then delivers
-                            // its result). Reporting instantly here would turn a SUCCESSFUL
-                            // sign-in into a spurious "cancelled" — worse than the bug being
-                            // fixed. The result cancels this whole job, so if one arrives during
-                            // the delay nothing is reported.
-                            delay(ReturnToForegroundGrace)
-                            KmpSupabaseAuthLog.log {
-                                "$provider: app returned to the foreground with no result after " +
-                                    "$ReturnToForegroundGrace — treating as cancelled by the user"
+                            // A real callback lands a beat AFTER the app regains focus (the
+                            // provider resumes the host Activity, then delivers its result), so
+                            // reporting on a fixed timer turns a SUCCESSFUL sign-in into a
+                            // spurious "cancelled" — worse than the bug this guards against.
+                            //
+                            // A longer timer cannot fix that; only EVIDENCE can. MEASURED on
+                            // mbs/cappy, Android 15, 2026-10-21 — a successful native Google
+                            // sign-in, where the old 1.5s grace expired 276ms before the result:
+                            //
+                            //   18:46:47.550  …no result after 1.5s — treating as cancelled
+                            //   18:46:47.826  onResult = Success
+                            //
+                            // So wait for the ACCESS TOKEN to change instead. This ends the moment
+                            // a session lands, and only runs out when the person really did back
+                            // out — which is why it can afford to be longer than any safe timer.
+                            val signedIn = withTimeoutOrNull(SessionSettleWindow) {
+                                while (client.currentAccessToken() == tokenBefore) delay(SessionSettlePoll)
+                            } != null
+                            if (signedIn) {
+                                KmpSupabaseAuthLog.log {
+                                    "$provider: a session landed after the app returned — the flow " +
+                                        "succeeded even if the provider never called back"
+                                }
+                            } else {
+                                KmpSupabaseAuthLog.log {
+                                    "$provider: app returned to the foreground and no session " +
+                                        "appeared within $SessionSettleWindow — treating as " +
+                                        "cancelled by the user"
+                                }
+                                onError(KmpSupabaseAuthError.Cancelled)
                             }
-                            onError(KmpSupabaseAuthError.Cancelled)
                         }
                         async { delay(timeout) }.onAwait {
                             KmpSupabaseAuthLog.log {
@@ -223,19 +271,15 @@ private fun rememberSignInWithWatchdog(
 }
 
 /**
- * How long to wait after the app regains focus before calling a resultless flow cancelled.
+ * Maps the plugin's result onto the provider-neutral taxonomy. Success is intentionally ignored.
  *
- * Long enough that a genuine callback arriving just after the host Activity resumes still wins the
- * race; short enough that a person who dismissed the sheet is not left watching a spinner. The
- * failure mode of too-short is reporting "cancelled" for a sign-in that actually succeeded, so this
- * errs upward.
+ * @param onNativeUnusable if non-null, a [NativeSignInResult.Error] hands off to this instead of
+ *   reporting [KmpSupabaseAuthError.ProviderRejected]. See [rememberNativeFailureWebFallback].
  */
-private val ReturnToForegroundGrace: Duration = 1500.milliseconds
-
-/** Maps the plugin's result onto the provider-neutral taxonomy. Success is intentionally ignored. */
-private fun NativeSignInResult.reportFailure(
+internal fun NativeSignInResult.reportFailure(
     provider: KmpSupabaseAuthProvider,
     onError: (KmpSupabaseAuthError) -> Unit,
+    onNativeUnusable: (() -> Unit)? = null,
 ) {
     // Logged for EVERY branch, success included. A provider that returns nothing at all is
     // indistinguishable from one that was never launched, and that ambiguity is exactly what makes
@@ -262,7 +306,123 @@ private fun NativeSignInResult.reportFailure(
         // match the calling package.
         is NativeSignInResult.Error -> {
             KmpSupabaseAuthLog.logError(exception) { "$provider: onResult = Error: $message" }
-            onError(KmpSupabaseAuthError.ProviderRejected(provider, exception))
+            if (onNativeUnusable != null) {
+                KmpSupabaseAuthLog.log {
+                    "$provider: the native path cannot sign in on this device — falling back to the " +
+                        "web OAuth flow, which needs only the web client id"
+                }
+                onNativeUnusable()
+            } else {
+                onError(KmpSupabaseAuthError.ProviderRejected(provider, exception))
+            }
+        }
+    }
+}
+
+/**
+ * How long to wait, after the app comes back from the web leg, for the session to actually land.
+ *
+ * The Android web leg is FIRE-AND-FORGET: `launchWebOAuth` is `auth.signInWith(Google, …)`, which
+ * returns the moment the Custom Tab is launched — the session arrives later, over the deep-link
+ * callback. So "the app is in the foreground again" says nothing on its own about whether the
+ * person signed in or dismissed the tab, and the only honest way to tell them apart is to watch
+ * for the access token to change.
+ *
+ * This is a CEILING, not a delay: the wait ends as soon as the token changes. It only runs out when
+ * the tab really was dismissed.
+ */
+private val SessionSettleWindow: Duration = 3.seconds
+
+/** How often the settle window re-checks the access token. */
+private val SessionSettlePoll: Duration = 150.milliseconds
+
+/**
+ * The web-OAuth leg used as a RECOVERY when the native provider cannot sign in on this device.
+ *
+ * Android's native Google path (`GetGoogleIdOption`) validates the calling app — package name plus
+ * signing certificate — against an **Android OAuth client** in the same Google Cloud project as the
+ * web client id. Several ordinary situations leave it with nothing to offer, and every one of them
+ * surfaces identically as `NoCredentialException: "No credentials available"`:
+ *
+ * - no Android OAuth client registered for this package + signing SHA-1 (**every fresh fork**, and
+ *   MEASURED on mbs/cappy 2026-10-12: `[GetGoogleIdOperation] Operation failed. curh: [28444]` with
+ *   seven Google accounts signed in on the device)
+ * - a build signed by a certificate that was never registered (debug keystore, Play App Signing)
+ * - no Google account on the device at all
+ * - Credential Manager's cooldown after repeated dismissals
+ *
+ * None of those are failures of the APP, and in all of them the web flow works — it needs only the
+ * web client id, which is already configured for the native path to have been attempted. Reporting
+ * [KmpSupabaseAuthError.ProviderRejected] here instead would dead-end a sign-in that could have
+ * succeeded, which is what it did before this existed.
+ *
+ * Returns null when there is nothing safe to fall back TO — see the [enabled] parameter.
+ *
+ * @param enabled false disables the fallback and restores the plain `ProviderRejected` report.
+ *   Passed false for link-identity, where the two paths are NOT equivalent: linking attaches the
+ *   provider to the CURRENT session, while the web leg signs in as a NEW one. Silently swapping
+ *   those would replace a guest session — and lose whatever it holds — to avoid an error message.
+ */
+@Composable
+private fun rememberNativeFailureWebFallback(
+    provider: KmpSupabaseAuthProvider,
+    client: KmpSupabaseAuthClient,
+    enabled: Boolean,
+    timeout: Duration,
+    scope: CoroutineScope?,
+    onError: (KmpSupabaseAuthError) -> Unit,
+): (() -> Unit)? {
+    if (!enabled) return null
+    // Detached for the same measured reason as the other web leg: the recovery outlives the button,
+    // and rememberCoroutineScope() dies exactly when a login screen swaps its providers for a
+    // spinner.
+    val detachedScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+    val active = scope ?: detachedScope
+    return remember(provider, client, active, timeout, onError) {
+        {
+            active.launch {
+                // Snapshot BEFORE launching. A plain "is there a token now?" check would read an
+                // existing anonymous/guest session as proof that this sign-in worked.
+                val tokenBefore = client.currentAccessToken()
+                val launched = when (provider) {
+                    KmpSupabaseAuthProvider.APPLE -> client.signInWithAppleFallback()
+                    else -> client.signInWithGoogleFallback()
+                }
+                launched.onFailure { cause ->
+                    val error = cause as? KmpSupabaseAuthError ?: KmpSupabaseAuthError.Unknown(cause)
+                    KmpSupabaseAuthLog.logError(error.cause) {
+                        "$provider: web OAuth fallback could not start (${error::class.simpleName}). " +
+                            "The native path had already failed, so there is nothing left to try."
+                    }
+                    onError(error)
+                    return@launch
+                }
+                // The tab is open. Exactly one of these ends the flow.
+                select<Unit> {
+                    async { awaitAppForegroundReturn() }.onAwait {
+                        val signedIn = withTimeoutOrNull(SessionSettleWindow) {
+                            while (client.currentAccessToken() == tokenBefore) delay(SessionSettlePoll)
+                        } != null
+                        if (signedIn) {
+                            KmpSupabaseAuthLog.log { "$provider: web OAuth fallback signed in" }
+                        } else {
+                            KmpSupabaseAuthLog.log {
+                                "$provider: app returned from the web OAuth fallback with no session " +
+                                    "after $SessionSettleWindow — treating as cancelled by the user"
+                            }
+                            onError(KmpSupabaseAuthError.Cancelled)
+                        }
+                    }
+                    async { delay(timeout) }.onAwait {
+                        KmpSupabaseAuthLog.log {
+                            "$provider: web OAuth fallback TIMEOUT after $timeout — the app never came " +
+                                "back from the browser. Check that this app's redirect URL is listed " +
+                                "in Supabase; a missing one completes the sheet and drops the callback."
+                        }
+                        onError(KmpSupabaseAuthError.NoResponse)
+                    }
+                }
+            }
         }
     }
 }
