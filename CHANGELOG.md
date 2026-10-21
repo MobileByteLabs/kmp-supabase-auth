@@ -12,7 +12,16 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
-## [0.3.2]
+## [0.3.3]
+
+Repository hygiene — no library code has changed in this cycle yet.
+
+- **Dependabot removed.** `.github/dependabot.yml` is deleted, so no automatic dependency-update
+  PRs are raised. Note that this stops security-update PRs too; Dependabot *alerts* in the Security
+  tab are a separate repository setting and are unaffected. The `mbl-actionhub` reusable-workflow
+  pins now advance by hand.
+
+## [0.3.2] - 2026-10-21
 
 ### Fixed — Android sign-in, both found on a device
 
