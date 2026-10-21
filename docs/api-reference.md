@@ -45,9 +45,26 @@ without a regenerated baseline fails CI.
 
 | Type | Purpose |
 |---|---|
-| `KmpSupabaseAuthConfig` | `projectRef`, `googleWebClientId`, `googleIosClientId`, `appleServiceId`, `redirectUrl`; derived `hasGoogleNative`, `oauthScheme`, `oauthHost`, `isConfigured` |
+| `KmpSupabaseAuthConfig` | `projectRef`, `googleWebClientId`, `appleServiceId`, `redirectUrl`; derived `hasGoogleNative`, `oauthScheme`, `oauthHost`, `isConfigured`. **`googleIosClientId` removed in 0.3.0** — iOS has no native Google path a published library can deliver |
 | `KmpSupabaseAuthOptions` | `extraInstall {}`, `userMapper {}`, `onSessionChanged {}`, `googleNative(Boolean)`, `appleNative(Boolean)` |
 | `KmpSupabaseAuth` | `validate(config)` — fails fast on a blank or placeholder `projectRef` |
+
+### Added in 0.3.0
+
+| Member | Purpose |
+|---|---|
+| `KmpSupabaseAuthClient.supportsNativeGoogle` | Whether this platform can run native Google with only what the library ships. **`false` on iOS** — the native path needs the GoogleSignIn SDK in the app's own Xcode/SPM graph, which Xcode resolves before Gradle runs. A *delivery* fact, independent of whether a client id is configured; see `KmpSupabaseAuthConfig.hasGoogleNative` for the configured half. The Compose launchers read it and route Google to the in-app web flow. |
+| `KmpSupabaseAuthLog.silenced` | Force diagnostics off regardless of build type. |
+| `awaitAppForegroundReturn()` | Suspends until the host app returns to the foreground. Public only because `internal` is module-scoped and the launchers live in `cmp-supabase-auth-compose` — **consumers have no reason to call it**; the launchers already race it against the no-response timeout to detect a cancelled provider. Real on Android (`ActivityLifecycleCallbacks`) and iOS (`UIApplicationDidBecomeActive`); a never-emitting no-op elsewhere. |
+
+**Removed in 0.3.0:** `KmpSupabaseAuthConfig.googleIosClientId`. Delete it from your config — there is
+no replacement, because iOS authenticates against the **Web** client. Also note
+`KmpSupabaseAuthClient` gained an abstract member, so a custom implementation or test double must add
+`supportsNativeGoogle`.
+
+**Changed in 0.3.0:** `KmpSupabaseAuthLog` defaults to logging in **debug** builds
+(`Platform.isDebugBinary` on native, the host app's `FLAG_DEBUGGABLE` on Android) instead of requiring
+an explicit `handler`. It still logs decisions and outcomes only — never a token, id or email.
 
 ### Domain
 
@@ -64,7 +81,7 @@ problem, and the ViewModel deliberately does not surface it.
 
 | Type | Rung |
 |---|---|
-| `KmpSupabaseAuthClient` | `core/network` — `sessionStatus`, `currentUser`, `isSignedIn`, `signInAnonymously`, `signInWith*Fallback`, `hasRestorableSession`, `currentAccessToken`, `signOut`, `raw` |
+| `KmpSupabaseAuthClient` | `core/network` — `sessionStatus`, `currentUser`, `isSignedIn`, `signInAnonymously`, `signInWith*Fallback`, `hasRestorableSession`, `currentAccessToken`, `signOut`, `raw`, **`supportsNativeGoogle`** |
 | `KmpSupabaseAuthSessionStore` | `core/store` — `user`, `isSignedIn`, `start(scope)`, `clear()` |
 | `KmpSupabaseAuthRepository` | `core/data` — `currentUser`, `isSignedIn`, `accessTokenFlow`, `continueAsGuest`, `signInWithFallback`, `signOut`, `restoreSession`, `accessToken` |
 

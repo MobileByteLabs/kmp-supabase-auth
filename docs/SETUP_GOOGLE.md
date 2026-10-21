@@ -63,10 +63,19 @@ Also register SHA-256 — some Google services require it, and adding it now cos
 You never reference the Android client id in code. Its existence is what authorises the package
 plus certificate pair.
 
-### 2c. iOS client — required for native iOS Google sign-in
+### 2c. iOS client — NOT required (and `googleIosClientId` no longer exists)
 
-**Create credentials → OAuth client ID → iOS.** Bundle id = your app's. Pass the resulting id as
-`googleIosClientId`.
+Skip this. iOS Google sign-in goes through the library's in-app `ASWebAuthenticationSession`, which
+authenticates against the **Web** client from 2a — so an iOS OAuth client configures nothing.
+
+Earlier versions of this guide asked for one and had you pass it as `googleIosClientId`. That field
+was **removed in 0.3.0** because it implied "configure this and native iOS works", which was never
+true: the native iOS path needs the GoogleSignIn SDK in the app's own Xcode/SPM graph, Xcode resolves
+that graph before any Gradle task runs, and the first tap aborts without it. Measured on a physical
+iPhone 13 — see [Proven on a device](../README.md#proven-on-a-device).
+
+An iOS client you already created is harmless; it is simply unused. Native **Apple** sign-in on iOS
+is unaffected (`AuthenticationServices` is a system framework).
 
 ## 3. Supabase dashboard
 

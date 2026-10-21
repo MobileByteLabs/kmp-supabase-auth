@@ -614,18 +614,24 @@ rather than starting over.
 
 | | Android | iOS |
 |---|---|---|
-| **Google** | native (Credential Manager) | native (GoogleSignIn SDK) |
-| **Apple** | web (browser OAuth) | native (`ASAuthorizationController`) |
+| **Google** | native (Credential Manager) | **in-app web** (`ASWebAuthenticationSession`) |
+| **Apple** | **in-app web** (Custom Tabs, in-task) | native (`ASAuthorizationController`) |
 
-Both native Google paths require `googleWebClientId` to be **non-blank**. Leave it blank and the
-library skips `googleNativeLogin`, ComposeAuth sees a null config and silently falls back to the
-browser. Sign-in still works, so nothing tells you.
+`googleWebClientId` must be **non-blank** for native Google on Android. Leave it blank and the library
+skips `googleNativeLogin`, ComposeAuth sees a null config and falls back to the browser. Sign-in still
+works, so nothing tells you — which is what `diagnoseKmpSupabaseSignInPaths` is for.
 
-Native Google on iOS additionally needs the iOS app to add **`GoogleSignIn-iOS` 9.0.0 via SPM**.
+**iOS Google is web by design, and no SPM step will change that.** An earlier version of this guide
+said to "add `GoogleSignIn-iOS` 9.0.0 via SPM" in the iOS app. Do not: supabase-kt's native iOS bridge
+compiles against headers and links nothing, so supplying the SDK needs a declaration in a package
+**Xcode resolves before any Gradle task runs** — unreachable from a Maven artifact. The first tap
+aborts. `supportsNativeGoogle` is `false` on iOS and the launcher routes to the in-app session
+instead. `googleIosClientId` was removed in 0.3.0.
 
-The web fallback on iOS opens the **external Safari app**
-(`UIApplication.sharedApplication.openURL`) — not `SFSafariViewController`, not
-`ASWebAuthenticationSession`. No Apple-target artifact links `SafariServices` or `WebKit`.
+**The web leg stays inside the app.** It is `ASWebAuthenticationSession` on iOS and a Custom Tab in
+the app's own task on Android — *not* supabase-kt's `UIApplication.openURL`, which opens the external
+Safari app and is what Apple rejects under **Guideline 4 - Design** ("the user is taken to the default
+web browser to sign in"). A consuming app was rejected for exactly that before this was built.
 
 Log the resolved paths at startup so a misconfiguration is visible before App Review is:
 

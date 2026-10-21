@@ -12,6 +12,49 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.1] - unreleased
+
+> Version declared by `gradle.properties#supabaseauth.version`, bumped automatically after the 0.3.0
+> release (`bump-after-release`). That job advances the version but does **not** create this heading,
+> so `assert-changelog.sh` fails until someone writes it — correctly, since a publish from that state
+> would ship with no release notes. Worth knowing when the next bump PR lands.
+
+### Documentation — corrected the claims the device run falsified
+
+Four documented instructions were wrong in a way no test could catch, because each described a path
+that compiles and then fails at runtime. All were corrected against the `mbs/cappy` device run
+(iPhone 13 + Android 15):
+
+- **`docs/SETUP_GOOGLE.md` §2c told readers to create an iOS OAuth client** and pass it as
+  `googleIosClientId`. The field was removed in 0.3.0 and the client configures nothing — iOS
+  authenticates against the **Web** client. Rewritten to say so and to explain why (an iOS client you
+  already made is harmless, just unused).
+- **`docs/INTEGRATE_KMP_TEMPLATE.md` claimed iOS Google is "native (GoogleSignIn SDK)"** and
+  instructed adding `GoogleSignIn-iOS` via SPM. That cannot work from a published library: Xcode
+  resolves the SPM graph before any Gradle task runs. The matrix now reads **in-app web
+  (`ASWebAuthenticationSession`)**, with the reason inline.
+- The same file claimed the **iOS web fallback opens the external Safari app**. True of supabase-kt,
+  false of this library since the in-app work — and the distinction is an App Store requirement, not
+  a nicety: a consumer was rejected under Guideline 4 - Design for exactly that.
+- **`docs/api-reference.md` still listed `googleIosClientId`** on the config and documented none of
+  the 0.3.0 additions. Corrected, with a new section covering `supportsNativeGoogle`,
+  `KmpSupabaseAuthLog.silenced`, `awaitAppForegroundReturn()`, the removal, and the debug-logging
+  default change — including the note that `KmpSupabaseAuthClient` gained an abstract member, so test
+  doubles must add it.
+
+**`README.md` gains a "Proven on a device" section.** Its pre-1.0 banner said the library was "not yet
+published to Maven Central, and native Google/Apple sign-in has not been verified on a physical
+device" — both halves now false. The platform-support table said iOS Google was "native". The new
+section records the four defects the device run found, each with its measurement: the unlinkable
+cinterop bridge, `FlowType.IMPLICIT` putting tokens in the fragment
+(`query=[] fragment=[access_token, …]`), a cancelled provider reporting nothing for 2m22s until the
+watchdog fired, and diagnostics defaulting to silence — which is what hid the other three.
+
+Also recorded: the published AAR ships **no consumer ProGuard rules** (verified by unzipping it), and
+`AuthConfig` must be declared **above** the Koin module because Kotlin initialises top-level
+properties in declaration order and `includes(...)` reads it during module construction.
+
+
 ### Fixed — a publish now completes the release cycle
 
 - **`bump-after-release: true`.** The reusable workflow's `Open Bump PR (next cycle)` job was wired
