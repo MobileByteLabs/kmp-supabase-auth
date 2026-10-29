@@ -1,6 +1,7 @@
 package io.github.mobilebytelabs.supabaseauth
 
 import io.github.jan.supabase.SupabaseClientBuilder
+import io.github.jan.supabase.auth.AuthConfig
 
 /**
  * Extension hooks. Every one is optional; the defaults are the supported happy path.
@@ -21,6 +22,9 @@ public class KmpSupabaseAuthOptions internal constructor() {
         private set
     internal var appleNativeEnabled: Boolean = true
         private set
+
+    /** Applied INSIDE the library's own `install(Auth)` — see [secureStorage]. */
+    internal var authConfig: AuthConfig.() -> Unit = {}
 
     /** Install further Supabase modules on the same client. */
     public fun extraInstall(block: SupabaseClientBuilder.() -> Unit) {

@@ -186,6 +186,10 @@ public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthUser {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class io/github/mobilebytelabs/supabaseauth/SecureStorageKt {
+	public static final fun secureStorage (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthOptions;Lcom/russhwolf/settings/Settings;)V
+}
+
 public final class io/github/mobilebytelabs/supabaseauth/di/KmpSupabaseAuthModulesKt {
 	public static final fun kmpSupabaseAuth (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lorg/koin/core/module/Module;
 	public static synthetic fun kmpSupabaseAuth$default (Lio/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthConfig;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lorg/koin/core/module/Module;
