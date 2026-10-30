@@ -14,6 +14,8 @@ binaryCompatibilityValidator = "0.18.2"
 #   auth-kt       17 targets (no linuxArm64 / watchosArm32 / watchosDeviceArm64 / wasmWasi)
 #   compose-auth   7 targets (NO macOS artifact at all)
 supabase = "3.8.0"
+# Test-only. Pinned to the Ktor supabase-kt 3.8.0 resolves, so the mock engine matches the client core.
+ktor = "3.5.1"
 
 # Store5 5.1.0-beta01 — 8 targets (no macOS / tvOS / watchOS / mingwX64 / linuxArm64).
 # This is what caps cmp-supabase-auth at 8; see README "Target matrix".
@@ -53,6 +55,7 @@ store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "st
 # Koin — the DI surface consumers wire with one line.
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 
 

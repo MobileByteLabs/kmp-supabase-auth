@@ -145,6 +145,22 @@ error cases, which do fire reliably.
 `UserDataStore` / `UserPreferencesRepository`, untouched. `AuthUser` carries identity only. There
 is never a second owner of state you already own.
 
+## Encrypted session storage
+
+By default supabase-kt keeps the signed-in session — access **and refresh** token — in plain
+storage: SharedPreferences on Android, NSUserDefaults on Apple, a file on desktop. A refresh token is
+a long-lived credential; anyone who copies it is that user until it is revoked. Hand the library your
+app's encrypted settings and both the session and the PKCE code verifier go there instead:
+
+```kotlin
+// kmp-project-template: `named("secure")` is the Keystore/Keychain-backed Settings from core-base/datastore
+ACCESS_POINT -> kmpSupabaseAuthInstall(AuthConfig) { secureStorage(get(named("secure"))) }
+```
+
+It is applied inside the library's own `install(Auth)`. Do **not** reach for `extraInstall` to set a
+session manager: a second `install(Auth)` replaces the first entirely (supabase-kt keys plugins in a
+map), silently dropping the redirect scheme/host and the in-app-browser setting.
+
 ## Guest sessions
 
 `signInAnonymously()` creates a real Supabase session with `is_anonymous = true`, so RLS works

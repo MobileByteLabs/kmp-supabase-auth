@@ -127,6 +127,14 @@ kotlin {
         // Every non-Android target shares one no-op `registerAuthCallbackClient` actual. Android
         // is the only platform needing a real OAuth-redirect receiver; declaring the rest one by
         // one would be eleven identical files.
+        // `settingsMain` holds `secureStorage(settings)`, which needs supabase-kt's Settings-backed
+        // session store. auth-kt ships that only on the multiplatform-settings targets — Android,
+        // Apple, JVM, JS, Wasm/JS — and NOT on Linux or Windows, so the option lives here rather than
+        // in commonMain (where it would fail to compile for linuxX64/mingwX64).
+        val settingsMain = create("settingsMain").apply { dependsOn(getByName("commonMain")) }
+        listOf("androidMain", "appleMain", "jvmMain", "jsMain", "wasmJsMain")
+            .forEach { getByName(it).dependsOn(settingsMain) }
+
         val noCallbackMain = create("noCallbackMain").apply { dependsOn(getByName("commonMain")) }
         listOf("jvmMain", "appleMain", "linuxMain", "mingwMain", "jsMain", "wasmJsMain")
             .forEach { getByName(it).dependsOn(noCallbackMain) }
@@ -193,6 +201,12 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.koin.test)
+        }
+
+        // A real SupabaseClient needs an HTTP engine and the library ships none (the app picks one).
+        // JVM-only: the mock engine is not published for every target this module builds.
+        jvmTest.dependencies {
+            implementation(libs.ktor.client.mock)
         }
     }
 }

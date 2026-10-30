@@ -45,6 +45,11 @@ internal fun buildAuthExtras(
         //
         // Set BEFORE options.extraInstall so a consumer can still override it — last write wins.
         preferInAppBrowser()
+
+        // Consumer AuthConfig additions — today the opt-in encrypted session store (secureStorage).
+        // Applied INSIDE this install(Auth), not via extraInstall: a second install(Auth) would REPLACE
+        // this whole block (supabase-kt keys plugins in a map), dropping the redirect + in-app browser.
+        options.authConfig(this)
     }
     options.extraInstall(this)
 }

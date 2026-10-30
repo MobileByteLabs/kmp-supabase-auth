@@ -14,7 +14,19 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [0.3.3]
 
-Repository hygiene — no library code has changed in this cycle yet.
+### Added
+
+- **`KmpSupabaseAuthOptions.secureStorage(settings)`** — keeps the signed-in session (access and
+  refresh token) and the PKCE code verifier in the app's encrypted `Settings` instead of
+  supabase-kt's plain default store (SharedPreferences / NSUserDefaults / a file). Opt-in: the
+  library cannot create platform-secure storage itself. Use it as
+  `kmpSupabaseAuthInstall(config) { secureStorage(get(named("secure"))) }`. Applied inside the
+  library's own `install(Auth)`, so the redirect and in-app-browser settings are kept — setting a
+  session manager through `extraInstall` would replace that whole block.
+
+### Changed
+
+Repository hygiene.
 
 - **Dependabot removed.** `.github/dependabot.yml` is deleted, so no automatic dependency-update
   PRs are raised. Note that this stops security-update PRs too; Dependabot *alerts* in the Security
