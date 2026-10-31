@@ -11,5 +11,8 @@ import io.github.jan.supabase.SupabaseClient
  * supabase-kt's own mechanism and the actual is a no-op.
  *
  * Called once from the DI graph, so the receiver is armed before any redirect can land.
+ *
+ * [redirectUrl]'s PATH selects which redirects reach [client] (see [AuthCallbackRouter]); null or a
+ * path-less URL makes it the app's default.
  */
-internal expect fun registerAuthCallbackClient(client: SupabaseClient)
+internal expect fun registerAuthCallbackClient(client: SupabaseClient, redirectUrl: String? = null)

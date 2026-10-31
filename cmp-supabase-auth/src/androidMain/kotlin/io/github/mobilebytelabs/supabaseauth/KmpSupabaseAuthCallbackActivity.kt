@@ -70,21 +70,12 @@ internal class KmpSupabaseAuthCallbackActivity : Activity() {
     }
 
     private fun forward(intent: Intent?) {
-        val supabase = client ?: return
         if (intent == null) return
+        // Route by the redirect's path: the app's own sign-in and an SDK's (e.g. PayCraft, on its own
+        // Supabase project) share this activity but must each land in the client that started them.
+        val supabase = AuthCallbackRouter.resolve(intent.data?.path) as? SupabaseClient ?: return
         // Never throw out of a callback activity: a failed exchange must leave the app on its
         // previous screen with the session unchanged, not crash on return from a browser.
         runCatching { supabase.handleDeeplinks(intent) }
-    }
-
-    internal companion object {
-        /**
-         * The client the redirect is delivered to.
-         *
-         * A static seam rather than DI lookup because the activity is constructed by the OS on
-         * return from the browser, with no scope to inject from. Set once at graph construction.
-         */
-        @JvmStatic
-        var client: SupabaseClient? = null
     }
 }

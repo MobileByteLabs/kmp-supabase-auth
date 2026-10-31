@@ -24,6 +24,7 @@ class KmpSupabaseAuthLogTest {
     @AfterTest
     fun tearDown() {
         KmpSupabaseAuthLog.handler = null
+        KmpSupabaseAuthLog.silenced = false
     }
 
     private fun capture() {
@@ -32,8 +33,11 @@ class KmpSupabaseAuthLogTest {
     }
 
     @Test
-    fun off_by_default_so_an_app_that_never_opts_in_pays_nothing() {
-        KmpSupabaseAuthLog.handler = null
+    fun silenced_pays_nothing_even_in_a_debug_build() {
+        // Null handler means "build-type default" (println in debug), so the off switch is
+        // `silenced` — asserting null-handler-is-off only held on non-debug test binaries (JVM).
+        KmpSupabaseAuthLog.handler = { lines += it }
+        KmpSupabaseAuthLog.silenced = true
         assertFalse(KmpSupabaseAuthLog.isEnabled)
         var built = false
         KmpSupabaseAuthLog.log {

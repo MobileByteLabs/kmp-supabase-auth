@@ -18,4 +18,4 @@ permissions:
 
 jobs:
   sync:
-    uses: MobileByteLabs/mbl-actionhub/.github/workflows/sync-docs-to-wiki.yml@v1.9.1
+    uses: MobileByteLabs/mbl-actionhub/.github/workflows/sync-docs-to-wiki.yml@v1.11.1
