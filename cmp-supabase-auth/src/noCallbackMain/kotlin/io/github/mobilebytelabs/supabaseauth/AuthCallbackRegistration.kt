@@ -11,4 +11,4 @@ import io.github.jan.supabase.SupabaseClient
  * each itself, so there is nothing to arm. Declared rather than omitted so the commonMain API
  * stays whole on every target.
  */
-internal actual fun registerAuthCallbackClient(client: SupabaseClient): Unit = Unit
+internal actual fun registerAuthCallbackClient(client: SupabaseClient, redirectUrl: String?): Unit = Unit

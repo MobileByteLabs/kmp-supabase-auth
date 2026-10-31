@@ -12,6 +12,23 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.4]
+
+### Added
+
+- **`kmpSupabaseAuthClientFor(client, config)`** — a `KmpSupabaseAuthClient` over a Supabase client
+  you already own, registering nothing in Koin. For an SDK that signs users into its OWN Supabase
+  project inside an app that may use this library for its own sign-in (PayCraft is the first): the
+  app's client stays in the app's Koin graph, the SDK passes its wrapper explicitly to the
+  launchers (`rememberKmpSupabaseAppleSignIn(client = …)`).
+
+### Changed
+
+- **The Android OAuth callback routes by redirect PATH.** It held one client, so a second
+  registrant would have received the app's redirects. Now the app keeps `<appId>://login-callback`
+  (unchanged, still the default) and an SDK uses `<appId>://login-callback/<sdk>`. The manifest
+  filter matches on host, so nothing changes for existing apps.
+
 ## [0.3.3]
 
 ### Added
