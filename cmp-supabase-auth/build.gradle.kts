@@ -338,6 +338,8 @@ tasks.matching { it.name == "wasmJsBrowserTest" }.configureEach {
 // task fails at property evaluation ("Check that requested SDK is installed"), which is an Xcode
 // capability gap, not a code problem. The TARGET still compiles, links and publishes; only its
 // simulator test execution is unavailable. watchosX64/watchosArm64 are unaffected.
+// native-tests.yml therefore has no watchOS job: its assert-tests-ran gate can never pass while
+// this is disabled. Re-add that job together with deleting this block.
 tasks.matching { it.name == "watchosSimulatorArm64Test" }.configureEach {
     enabled = false
 }

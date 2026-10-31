@@ -1,4 +1,4 @@
-# Native test execution — iOS + watchOS Simulator, Windows Native, Linux Native.
+# Native test execution — iOS Simulator, Windows Native, Linux Native.
 #
 # WHY THIS EXISTS
 # `pr-check.yml` sets run-ios-tests/run-linux-tests to false: executing them on every PR costs
@@ -42,7 +42,7 @@ on:
         # Was [both, ios, linux] — "both" predated the watchOS and Windows jobs and had stopped
         # describing reality. On a pull_request event this input is empty, which every condition
         # below treats as "all".
-        options: [all, ios, watchos, linux, windows]
+        options: [all, ios, linux, windows]
   pull_request:
     # Opt-in per PR: add the `native-tests` label to run these before merging something
     # that touches native behaviour.
@@ -97,54 +97,6 @@ jobs:
           path: '**/build/test-results/iosSimulatorArm64Test/**/*.xml'
           if-no-files-found: warn
 
-  watchos:
-    name: Test (watchOS Simulator)
-    # cmp-share is the only module with watchOS targets today. Runs here rather than in
-    # pr-check because a local macOS dev box usually has NO watchOS simulator runtime installed
-    # (`xcrun simctl list runtimes` shows none), which makes `watchosSimulatorArm64Test` fail with
-    # "Xcode does not support simulator tests for watchos_simulator_arm64" — a missing SDK, not a
-    # broken build. The GitHub macOS image ships the runtime, so this is where the watchOS
-    # `actual`s actually get EXECUTED instead of only compiled.
-    if: >-
-      github.event_name != 'pull_request' ||
-      contains(github.event.pull_request.labels.*.name, 'native-tests')
-    # macos-latest, not macos-14: the macos-14 image ships an Xcode whose Swift toolchain is older
-    # than firebase-ios-sdk 12.x requires, so SwiftPM resolution fails before any test runs with
-    # "Dependencies could not be resolved because 'firebase-ios-sdk' >= 12.0.0 contains
-    # incompatible tools version (6.1.0)". That aborted the whole build at
-    # :cmp-app-intents:fetchUmbrellaPackageIdentifierForDefault — nothing to do with the tests.
-    runs-on: macos-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7
-      - uses: gradle/actions/wrapper-validation@v6
-      - uses: actions/setup-java@v6
-        with:
-          java-version: '21'
-          distribution: 'zulu'
-      - uses: gradle/actions/setup-gradle@v6
-
-      - name: Show available watchOS runtimes
-        # Printed before the run so a failure is immediately attributable to a missing runtime
-        # on the image rather than to the code under test.
-        run: xcrun simctl list runtimes | grep -i watch || echo "NO watchOS runtime on this image"
-
-      - name: Run watchosSimulatorArm64Test
-        if: inputs.targets == '' || inputs.targets == 'all' || inputs.targets == 'watchos'
-        run: bash .github/scripts/run-native-tests.sh watchosSimulatorArm64Test --continue
-
-      - name: Assert tests actually executed
-        if: always() && (inputs.targets == '' || inputs.targets == 'all' || inputs.targets == 'watchos')
-        run: bash .github/scripts/assert-tests-ran.sh watchosSimulatorArm64Test
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: native-test-reports-watchos
-          path: '**/build/test-results/watchosSimulatorArm64Test/**/*.xml'
-          if-no-files-found: warn
-
   windows:
     name: Test (Windows Native)
     # The LAST unexecuted platform. Every Windows path in this toolkit — the PowerShell
@@ -167,7 +119,7 @@ jobs:
 
       - name: Show PowerShell version
         # Printed first so a failure is immediately attributable to the shell rather than to the
-        # code under test — the same reason the watchOS job prints its simulator runtimes.
+        # code under test.
         #
         # `shell: pwsh` rather than `run: powershell -Command "$PSVersionTable..."`: the runner's
         # DEFAULT shell on Windows is already PowerShell, so the outer shell expanded

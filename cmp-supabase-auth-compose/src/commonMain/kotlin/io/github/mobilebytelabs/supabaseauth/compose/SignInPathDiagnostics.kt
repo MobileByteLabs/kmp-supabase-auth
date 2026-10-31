@@ -102,7 +102,10 @@ private fun resolveGoogle(
                 "before Gradle runs. Uses ASWebAuthenticationSession in-app instead."
         }
 
-        !config.hasGoogleNative -> {
+        // The client id alone, not `hasGoogleNative`: that also folds in the RUNNING platform's
+        // delivery support, which would make `platform = ANDROID` answer for iOS when diagnosed
+        // there. Delivery is already decided per `platform` by the branches around this one.
+        config.googleWebClientId.isBlank() -> {
             path = KmpSupabaseSignInPath.WEB_FALLBACK
             reason = "googleWebClientId is blank, so googleNativeLogin() is never installed — " +
                 "set it to the WEB client id (not the Android one)"
