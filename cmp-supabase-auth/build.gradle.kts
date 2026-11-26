@@ -38,7 +38,13 @@ version = providers.gradleProperty("supabaseauth.version").get()
 kotlin {
     applyDefaultHierarchyTemplate()
 
-    jvm()
+    // Pinned, like android's below: unpinned, the JVM target inherited the publishing JDK (21), so 0.3.4/0.3.5
+    // shipped Java 21 bytecode and a Java 17 consumer died with UnsupportedClassVersionError (JvmBytecodeTargetTest).
+    jvm {
+        compilerOptions {
+            jvmTarget = JvmTarget.JVM_11
+        }
+    }
 
     android {
         namespace = "io.github.mobilebytelabs.supabaseauth"
