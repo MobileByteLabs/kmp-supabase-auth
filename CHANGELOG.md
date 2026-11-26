@@ -12,6 +12,16 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.6]
+
+### Fixed
+
+- **The JVM artifacts load on Java 17 again.** The `jvm()` target had no pinned bytecode level, so it took the
+  publishing JDK's (21): 0.3.4 and 0.3.5 shipped Java 21 class files, and a desktop app or JVM test running on
+  Java 17 failed with `UnsupportedClassVersionError` the first time it touched the library. Both
+  `cmp-supabase-auth` and `cmp-supabase-auth-compose` now compile the JVM target to Java 11 bytecode — the same
+  floor as the Android target.
+
 ## [0.3.5]
 
 ### Fixed
