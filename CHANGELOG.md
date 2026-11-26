@@ -12,6 +12,17 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.5]
+
+### Fixed
+
+- **Web and desktop sign-in no longer redirect to an app-scheme link nothing can open.**
+  `KmpSupabaseAuthConfig.redirectUrl` is one `myapp://…` URL for every target, and the default web-OAuth
+  launch passed it to the provider on JS/Wasm and the JVM too — so a browser or desktop app landed the user
+  on a dead link. Those targets now drop an app-scheme redirect and let supabase-kt use its own default: the
+  current page on JS/Wasm (parsed back into a session on load) and its local callback server on the JVM. An
+  explicit `https://` redirect is still honoured everywhere; Android and iOS keep the app-scheme redirect.
+
 ## [0.3.4]
 
 ### Added
