@@ -19,9 +19,10 @@ internal actual suspend fun SupabaseClient.launchWebOAuth(
     provider: KmpSupabaseAuthProvider,
     redirectUrl: String?,
 ): Result<Unit> = runCatching {
+    val redirect = webOAuthRedirect(redirectUrl, deliversAppSchemeRedirect)
     when (provider) {
-        KmpSupabaseAuthProvider.GOOGLE -> auth.signInWith(Google, redirectUrl = redirectUrl)
-        KmpSupabaseAuthProvider.APPLE -> auth.signInWith(Apple, redirectUrl = redirectUrl)
+        KmpSupabaseAuthProvider.GOOGLE -> auth.signInWith(Google, redirectUrl = redirect)
+        KmpSupabaseAuthProvider.APPLE -> auth.signInWith(Apple, redirectUrl = redirect)
         else -> throw KmpSupabaseAuthError.ProviderRejected(provider)
     }
 }
