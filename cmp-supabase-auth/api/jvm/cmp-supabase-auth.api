@@ -109,6 +109,7 @@ public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthLog {
 
 public final class io/github/mobilebytelabs/supabaseauth/KmpSupabaseAuthOptions {
 	public final fun appleNative (Z)V
+	public final fun authUrl (Ljava/lang/String;)V
 	public final fun extraInstall (Lkotlin/jvm/functions/Function1;)V
 	public final fun googleNative (Z)V
 	public final fun onSessionChanged (Lkotlin/jvm/functions/Function1;)V

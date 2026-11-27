@@ -26,6 +26,19 @@ public class KmpSupabaseAuthOptions internal constructor() {
     /** Applied INSIDE the library's own `install(Auth)` — see [secureStorage]. */
     internal var authConfig: AuthConfig.() -> Unit = {}
 
+    internal var authUrl: String? = null
+        private set
+
+    /**
+     * Send every Auth call to [url] (the full Auth base, e.g. `https://api.example.com/auth/v1`) instead
+     * of `<project>/auth/v1` — for a proxy in front of the project, such as a Worker that adds the project
+     * key server-side so the app ships none. The proxy must serve `token`, `user`, `logout`, `authorize`
+     * and `settings`. Independent of [secureStorage]: the two compose in either order.
+     */
+    public fun authUrl(url: String) {
+        authUrl = url.trimEnd('/')
+    }
+
     /** Install further Supabase modules on the same client. */
     public fun extraInstall(block: SupabaseClientBuilder.() -> Unit) {
         extraInstall = block

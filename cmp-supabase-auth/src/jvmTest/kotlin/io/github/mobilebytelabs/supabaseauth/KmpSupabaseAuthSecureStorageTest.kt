@@ -56,7 +56,7 @@ class KmpSupabaseAuthSecureStorageTest {
 }
 
 /** Minimal in-memory [Settings]; only strings are exercised, the rest delegate to the same map. */
-private class RecordingSettings : Settings {
+internal class RecordingSettings : Settings {
     val values = mutableMapOf<String, String>()
     override val keys: Set<String> get() = values.keys
     override val size: Int get() = values.size

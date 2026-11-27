@@ -12,6 +12,17 @@ section in step with `supabaseauth.version` in `gradle.properties`.
 
 ## [Unreleased]
 
+## [0.3.7]
+
+### Added
+
+- **`authUrl(url)` sends sign-in through a proxy.** An app whose Supabase traffic goes through a proxy that adds
+  the project key server-side ships no key of its own, but sign-in still went straight to the project, so the
+  ID-token exchange failed with `401 "No API key found in request"` after Google had already returned a valid
+  token. Pass the proxy's Auth base to `kmpSupabaseAuthInstall(config) { authUrl("https://api.example.com/auth/v1") }`
+  and every Auth call goes there instead. The proxy has to serve `token`, `user`, `logout`, `authorize` and
+  `settings`. `authUrl` and `secureStorage` combine in either order.
+
 ## [0.3.6]
 
 ### Fixed
