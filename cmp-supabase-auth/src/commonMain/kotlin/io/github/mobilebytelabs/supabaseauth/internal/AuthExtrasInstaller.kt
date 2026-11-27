@@ -50,6 +50,8 @@ internal fun buildAuthExtras(
         // Applied INSIDE this install(Auth), not via extraInstall: a second install(Auth) would REPLACE
         // this whole block (supabase-kt keys plugins in a map), dropping the redirect + in-app browser.
         options.authConfig(this)
+        // Its own field, not part of authConfig: secureStorage REPLACES authConfig wholesale.
+        options.authUrl?.let { customUrl = it }
     }
     options.extraInstall(this)
 }
